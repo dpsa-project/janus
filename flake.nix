@@ -20,6 +20,15 @@
           version = "0.1.0";
           src = ./.; # the folder with the cargo.toml
           cargoLock.lockFile = ./Cargo.lock;
+          cargoLock.outputHashes = {
+            "daphne-0.1.2" = "sha256-nYuTR0QjvlyWAVoSy1UmaPXZHco4KODxcNCDq4Vqcfo=";
+          };
+          cargoBuildFlags = "-p janus_server";
+          nativeBuildInputs = [ pkgs.pkg-config ];
+          buildInputs = [
+            pkgs.openssl
+          ];
+          doCheck = false;
         };
       in {
         defaultPackage = myRustBuild;
