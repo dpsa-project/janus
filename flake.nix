@@ -1,5 +1,10 @@
+{
+  description = "A basic flake with a shell";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs.rust-overlay.url = "github:oxalica/rust-overlay";
 
-outputs = { self, nixpkgs, flake-utils, rust-overlay, ... }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [ (import rust-overlay) ];
@@ -11,7 +16,7 @@ outputs = { self, nixpkgs, flake-utils, rust-overlay, ... }:
         };
         myRustBuild = rustPlatform.buildRustPackage {
           pname =
-            "rust_nix_blog"; # make this what ever your cargo.toml package.name is
+            "janus_server"; # make this what ever your cargo.toml package.name is
           version = "0.1.0";
           src = ./.; # the folder with the cargo.toml
           cargoLock.lockFile = ./Cargo.lock;
@@ -24,4 +29,4 @@ outputs = { self, nixpkgs, flake-utils, rust-overlay, ... }:
         };
       });
 
-
+}
