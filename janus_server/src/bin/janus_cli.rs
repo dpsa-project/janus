@@ -23,6 +23,28 @@ use std::{
 };
 use tokio::fs;
 use tracing::{debug, info};
+use base64::URL_SAFE_NO_PAD;
+use derivative::Derivative;
+use janus_core::{
+    hpke::HpkePrivateKey,
+    task::{url_ensure_trailing_slash, AuthenticationToken},
+};
+use janus_messages::{
+    Duration, HpkeAeadId, HpkeConfig, HpkeConfigId, HpkeKdfId, HpkeKemId, HpkePublicKey, Interval,
+    Role, TaskId,
+};
+use std::{
+    array::TryFromSliceError,
+    collections::HashMap,
+    fmt::{self, Formatter},
+};
+use url::Url;
+use rand::random;
+use janus_core::hpke::generate_hpke_config_and_private_key;
+use janus_server::task::VdafInstance;
+use janus_server::SecretBytes;
+use janus_server::task::PRIO3_AES128_VERIFY_KEY_LENGTH;
+use janus_server::messages::*;
 
 static SCHEMA: &str = include_str!("../../../db/schema.sql");
 
@@ -54,6 +76,14 @@ enum Command {
 
         /// A YAML file containing a list of tasks to be written. Existing tasks (matching by task
         /// ID) will be overwritten.
+        tasks_file: PathBuf,
+    },
+
+    /// Write a set of tasks identified in a file to the datastore.
+    ProvisionExampleTask {
+        #[clap(flatten)]
+        common_options: CommonBinaryOptions,
+
         tasks_file: PathBuf,
     },
 
@@ -89,11 +119,11 @@ impl Command {
                 kubernetes_secret_options,
                 tasks_file,
             } => {
-                let kube_client = kube::Client::try_default()
-                    .await
-                    .context("couldn't connect to Kubernetes environment")?;
+                // let kube_client = kube::Client::try_default()
+                //     .await
+                //     .context("couldn't connect to Kubernetes environment")?;
                 let config: Config = read_config(common_options)?;
-                install_tracing_and_metrics_handlers(config.common_config())?;
+                // install_tracing_and_metrics_handlers(config.common_config())?;
                 let pool = database_pool(
                     &config.common_config.database,
                     common_options.database_password.as_deref(),
@@ -103,12 +133,103 @@ impl Command {
                 let datastore = datastore(
                     pool,
                     RealClock::default(),
-                    &kubernetes_secret_options
-                        .datastore_keys(common_options, kube_client)
-                        .await?,
+                    &vec!["vWoEFA7F+ojcF+HohGLn/Q".to_owned()]
+                    // &kubernetes_secret_options
+                    //     .datastore_keys(common_options, kube_client)
+                    //     .await?,
                 )?;
 
                 provision_tasks(&datastore, tasks_file).await
+            }
+
+            Command::ProvisionExampleTask {
+                common_options,
+                tasks_file,
+            } => {
+
+                pub fn generate_auth_token() -> AuthenticationToken {
+                    let buf: [u8; 16] = random();
+                    base64::encode_config(&buf, base64::URL_SAFE_NO_PAD)
+                        .into_bytes()
+                        .into()
+                }
+
+                pub fn generate_test_hpke_config_and_private_key() -> (HpkeConfig, HpkePrivateKey) {
+                    generate_hpke_config_and_private_key(
+                        HpkeConfigId::from(random::<u8>()),
+                        HpkeKemId::X25519HkdfSha256,
+                        HpkeKdfId::HkdfSha256,
+                        HpkeAeadId::Aes128Gcm,
+                    )
+                }
+
+                // let kube_client = kube::Client::try_default()
+                //     .await
+                //     .context("couldn't connect to Kubernetes environment")?;
+                let config: Config = read_config(common_options)?;
+                // install_tracing_and_metrics_handlers(config.common_config())?;
+                let pool = database_pool(
+                    &config.common_config.database,
+                    common_options.database_password.as_deref(),
+                )
+                .await?;
+
+                let datastore = datastore(
+                    pool,
+                    RealClock::default(),
+                    &vec!["vWoEFA7F+ojcF+HohGLn/Q".to_owned()]
+                    // &kubernetes_secret_options
+                    //     .datastore_keys(common_options, kube_client)
+                    //     .await?,
+                )?;
+
+                let task = Task::new(
+                    random(),
+                    Vec::from([
+                        "http://localhost:9991".parse().unwrap(),
+                        "http://localhost:9992".parse().unwrap(),
+                        // "http://helper_endpoint".parse().unwrap(),
+                    ]),
+                    VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Count),
+                    Role::Leader,
+                    Vec::from([SecretBytes::new([0; PRIO3_AES128_VERIFY_KEY_LENGTH].into())]),
+                    0,
+                    0,
+                    Duration::from_hours(8).unwrap(),
+                    Duration::from_minutes(10).unwrap(),
+                    generate_test_hpke_config_and_private_key().0,
+                    Vec::from([generate_auth_token()]),
+                    Vec::from([generate_auth_token()]),
+                    Vec::from([generate_test_hpke_config_and_private_key()]),
+                ).unwrap();
+
+                // let stask = serialize(task);
+                fs::write("taskfile.yml", serde_yaml::to_string(&task).unwrap()).await;
+
+                let tasks = Arc::new(vec![task]);
+
+
+                datastore
+                    .run_tx(|tx| {
+                        let tasks = Arc::clone(&tasks);
+                        Box::pin(async move {
+                            for task in tasks.iter() {
+                                // We attempt to delete the task, but ignore "task not found" errors since
+                                // the task not existing is an OK outcome too.
+                                match tx.delete_task(&task.id).await {
+                                    Ok(_) | Err(datastore::Error::MutationTargetNotFound) => (),
+                                    err => err?,
+                                }
+
+                                tx.put_task(task).await?;
+                            }
+                            Ok(())
+                        })
+                    })
+                    .await
+                    .context("couldn't write tasks")
+
+                // provision_tasks(&datastore, tasks_file).await
             }
 
             Command::CreateDatastoreKey {
