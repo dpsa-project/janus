@@ -14,6 +14,8 @@
           cargo = rustVersion;
           rustc = rustVersion;
         };
+
+        # janus_server
         myRustBuild = rustPlatform.buildRustPackage {
           pname =
             "janus_server"; # make this what ever your cargo.toml package.name is
@@ -30,8 +32,24 @@
           ];
           doCheck = false;
         };
+
+        # building the container
+        dockerImage = pkgs.dockerTools.buildImage {
+          name = "mxmurw/janus_server_aggregator";
+          config = {
+            Cmd = [ "${myRustBuild}/bin/aggregator" "--config-file" "/data/aggregator-config.yml" "--datastore-keys" "vWoEFA7F+ojcF+HohGLn/Q" ];
+            WorkingDir = "/data";
+            Volumes = { "/data" = {}; };
+          };
+        };
+
       in {
-        defaultPackage = myRustBuild;
+        packages = {
+          rustPackage = myRustBuild;
+          docker = dockerImage;
+        };
+        defaultPackage = dockerImage;
+
         devShell = pkgs.mkShell {
           buildInputs =
             [ (rustVersion.override { extensions = [ "rust-src" ]; }) ];
