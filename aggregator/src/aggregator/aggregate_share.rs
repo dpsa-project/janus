@@ -11,6 +11,8 @@ use crate::{
     task::{Task, VdafInstance, PRIO3_AES128_VERIFY_KEY_LENGTH},
 };
 use derivative::Derivative;
+use fixed::types::extra::U31;
+use fixed::FixedI32;
 use futures::{future::BoxFuture, try_join};
 #[cfg(test)]
 use janus_core::test_util::dummy_vdaf;
@@ -28,8 +30,8 @@ use prio::{
     vdaf::{
         self,
         prio3::{
-            Prio3Aes128Count, Prio3Aes128CountVecMultithreaded, Prio3Aes128Histogram,
-            Prio3Aes128Sum,
+            Prio3Aes128Count, Prio3Aes128CountVecMultithreaded,
+            Prio3Aes128FixedPointBoundedL2VecSum, Prio3Aes128Histogram, Prio3Aes128Sum,
         },
         Aggregatable,
     },
@@ -167,6 +169,14 @@ impl CollectJobDriver {
 
             VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Histogram { .. }) => {
                 self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128Histogram>(
+                    datastore,
+                    lease,
+                )
+                .await
+            }
+
+            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { .. }) => {
+                self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(
                     datastore,
                     lease,
                 )
@@ -370,6 +380,14 @@ impl CollectJobDriver {
 
             VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Histogram { .. }) => {
                 self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128Histogram>(
+                    datastore,
+                    lease,
+                )
+                .await
+            }
+
+            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { .. }) => {
+                self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(
                     datastore,
                     lease,
                 )

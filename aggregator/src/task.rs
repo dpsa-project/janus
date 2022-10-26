@@ -90,6 +90,9 @@ impl Serialize for VdafInstance {
             }) => VdafSerialization::Prio3Aes128Histogram {
                 buckets: buckets.clone(),
             },
+            VdafInstance::Real(
+                janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries },
+            ) => VdafSerialization::Prio3Aes128FixedPointBoundedL2VecSum { entries: *entries },
             VdafInstance::Real(janus_core::task::VdafInstance::Poplar1 { bits }) => {
                 VdafSerialization::Poplar1 { bits: *bits }
             }
@@ -123,6 +126,13 @@ impl<'de> Deserialize<'de> for VdafInstance {
             VdafSerialization::Prio3Aes128Histogram { buckets } => Ok(VdafInstance::Real(
                 janus_core::task::VdafInstance::Prio3Aes128Histogram { buckets },
             )),
+            VdafSerialization::Prio3Aes128FixedPointBoundedL2VecSum { entries } => {
+                Ok(VdafInstance::Real(
+                    janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum {
+                        entries,
+                    },
+                ))
+            }
             VdafSerialization::Poplar1 { bits } => Ok(VdafInstance::Real(
                 janus_core::task::VdafInstance::Poplar1 { bits },
             )),
@@ -150,6 +160,9 @@ enum VdafSerialization {
     Prio3Aes128Sum { bits: u32 },
     /// A `prio3` histogram using the AES 128 pseudorandom generator.
     Prio3Aes128Histogram { buckets: Vec<u64> },
+    /// A `prio3` fixedpoint vector sum with bounded L2 norm using the AES 128
+    /// pseudorandom generator.
+    Prio3Aes128FixedPointBoundedL2VecSum { entries: usize },
     /// The `poplar1` VDAF. Support for this VDAF is experimental.
     Poplar1 { bits: usize },
 
@@ -997,6 +1010,21 @@ mod tests {
                 Token::U64(200),
                 Token::U64(400),
                 Token::SeqEnd,
+                Token::StructVariantEnd,
+            ],
+        );
+        assert_tokens(
+            &VdafInstance::Real(
+                janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries: 3 },
+            ),
+            &[
+                Token::StructVariant {
+                    name: "Vdaf",
+                    variant: "Prio3Aes128FixedPointBoundedL2VecSum",
+                    len: 1,
+                },
+                Token::Str("entries"),
+                Token::U64(3),
                 Token::StructVariantEnd,
             ],
         );

@@ -586,6 +586,7 @@ mod tests {
     };
     use assert_matches::assert_matches;
     use chrono::{TimeZone, Utc};
+    use fixed_macro::fixed;
     use janus_core::{
         hpke::{
             self, associated_data_for_aggregate_share,
@@ -715,7 +716,7 @@ mod tests {
         let collector = setup_collector(vdaf);
 
         let batch_interval = Interval::new(
-            Time::from_seconds_since_epoch(1_000_000),
+            Time::from_seconds_since_epoch(2_000_000), // TODO why???
             Duration::from_seconds(3600),
         )
         .unwrap();
@@ -873,6 +874,68 @@ mod tests {
 
         let collection = collector.poll_until_complete(&job).await.unwrap();
         assert_eq!(collection, Collection::new(1, Vec::from([0, 0, 0, 1, 0])));
+
+        mocked_collect_start_success.assert();
+        mocked_collect_complete.assert();
+    }
+
+    #[tokio::test]
+    async fn successful_collect_prio3_fixedpoint_boundedl2_vec_sum() {
+        install_test_trace_subscriber();
+
+        let vdaf = Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, 3).unwrap();
+        let fp32_4_inv = fixed!(0.25: I1F31);
+        let fp32_8_inv = fixed!(0.125: I1F31);
+        let fp32_16_inv = fixed!(0.0625: I1F31);
+        let transcript = run_vdaf(
+            &vdaf,
+            &random_verify_key(),
+            &(),
+            &random(),
+            &vec![fp32_16_inv, fp32_8_inv, fp32_4_inv],
+        );
+        let collector = setup_collector(vdaf);
+
+        let batch_interval = Interval::new(
+            Time::from_seconds_since_epoch(1_000_000),
+            Duration::from_seconds(3600),
+        )
+        .unwrap();
+        let collect_resp =
+            build_collect_response(&transcript, &collector.parameters, batch_interval);
+
+        let collect_job_url = format!("{}/collect_job/1", mockito::server_url());
+        let mocked_collect_start_success = mock("POST", "/collect")
+            .match_header(
+                CONTENT_TYPE.as_str(),
+                CollectReq::<TimeInterval>::MEDIA_TYPE,
+            )
+            .with_status(303)
+            .with_header(LOCATION.as_str(), &collect_job_url)
+            .expect(1)
+            .create();
+        let mocked_collect_complete = mock("GET", "/collect_job/1")
+            .with_status(200)
+            .with_header(
+                CONTENT_TYPE.as_str(),
+                CollectResp::<TimeInterval>::MEDIA_TYPE,
+            )
+            .with_body(collect_resp.get_encoded())
+            .expect(1)
+            .create();
+
+        let job = collector
+            .start_collection(batch_interval, &())
+            .await
+            .unwrap();
+        assert_eq!(job.collect_job_url.as_str(), collect_job_url);
+        assert_eq!(job.batch_interval, batch_interval);
+
+        let agg_result = collector.poll_until_complete(&job).await.unwrap();
+        assert_eq!(
+            agg_result,
+            Collection::new(1, Vec::from([0.0625, 0.125, 0.25]))
+        );
 
         mocked_collect_start_success.assert();
         mocked_collect_complete.assert();

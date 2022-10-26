@@ -12,6 +12,8 @@ use crate::{
 };
 use anyhow::{anyhow, Context as _, Result};
 use derivative::Derivative;
+use fixed::types::extra::U31;
+use fixed::FixedI32;
 use futures::{
     future::{try_join_all, BoxFuture, FutureExt},
     try_join,
@@ -35,8 +37,8 @@ use prio::{
     vdaf::{
         self,
         prio3::{
-            Prio3, Prio3Aes128Count, Prio3Aes128CountVecMultithreaded, Prio3Aes128Histogram,
-            Prio3Aes128Sum,
+            Prio3, Prio3Aes128Count, Prio3Aes128CountVecMultithreaded,
+            Prio3Aes128FixedPointBoundedL2VecSum, Prio3Aes128Histogram, Prio3Aes128Sum,
         },
         PrepareTransition,
     },
@@ -109,6 +111,14 @@ impl AggregationJobDriver {
             }) => {
                 let vdaf = Arc::new(Prio3::new_aes128_histogram(2, buckets)?);
                 self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128Histogram>(datastore, vdaf, lease)
+                    .await
+            }
+
+            VdafInstance::Real(
+                janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries },
+            ) => {
+                let vdaf = Arc::new(Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *entries)?);
+                self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, vdaf, lease)
                     .await
             }
 
@@ -803,6 +813,10 @@ impl AggregationJobDriver {
             }
             VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Histogram { .. }) => {
                 self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128Histogram>(datastore, lease)
+                    .await
+            }
+            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { .. }) => {
+                self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, lease)
                     .await
             }
 

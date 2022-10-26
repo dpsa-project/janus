@@ -86,6 +86,7 @@ pub enum VdafObject {
     Prio3Aes128CountVec { length: NumberAsString<usize> },
     Prio3Aes128Sum { bits: NumberAsString<u32> },
     Prio3Aes128Histogram { buckets: Vec<NumberAsString<u64>> },
+    Prio3Aes128FixedPointBoundedL2VecSum { entries: NumberAsString<usize> },
 }
 
 impl From<VdafInstance> for VdafObject {
@@ -108,6 +109,11 @@ impl From<VdafInstance> for VdafObject {
                 buckets,
             }) => VdafObject::Prio3Aes128Histogram {
                 buckets: buckets.iter().copied().map(NumberAsString).collect(),
+            },
+            VdafInstance::Real(
+                janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries },
+            ) => VdafObject::Prio3Aes128FixedPointBoundedL2VecSum {
+                entries: NumberAsString(entries),
             },
             _ => panic!("Unsupported VDAF: {:?}", vdaf),
         }
@@ -133,6 +139,11 @@ impl From<VdafObject> for VdafInstance {
                     buckets: buckets.iter().map(|value| value.0).collect(),
                 })
             }
+            VdafObject::Prio3Aes128FixedPointBoundedL2VecSum { entries } => VdafInstance::Real(
+                janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum {
+                    entries: entries.0,
+                },
+            ),
         }
     }
 }

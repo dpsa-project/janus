@@ -5,9 +5,12 @@ use clap::{
     ArgAction, CommandFactory, FromArgMatches, Parser, ValueEnum,
 };
 use derivative::Derivative;
+use fixed::types::extra::U31;
+use fixed::FixedI32;
 use janus_collector::{default_http_client, Collector, CollectorParameters};
 use janus_core::{hpke::HpkePrivateKey, task::AuthenticationToken};
 use janus_messages::{Duration, HpkeConfig, Interval, TaskId, Time};
+use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 use prio::{
     codec::Decode,
     vdaf::{self, prio3::Prio3},
@@ -51,6 +54,8 @@ enum VdafType {
     Sum,
     /// Prio3Aes128Histogram
     Histogram,
+    /// Prio3FixedPointBoundedL2VecSum
+    FixedPointBoundedL2VecSum,
 }
 
 #[derive(Clone)]
@@ -336,6 +341,14 @@ async fn run(options: Options) -> Result<(), Error> {
         (VdafType::Histogram, None, None, Some(ref buckets)) => {
             let vdaf = Prio3::new_aes128_histogram(2, &buckets.0)
                 .map_err(|err| Error::Anyhow(err.into()))?;
+            run_collection_generic(parameters, vdaf, http_client, interval, &())
+                .await
+                .map_err(|err| Error::Anyhow(err.into()))
+        }
+        (VdafType::FixedPointBoundedL2VecSum, Some(entries), None, None) => {
+            let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
+                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, entries)
+                    .map_err(|err| Error::Anyhow(err.into()))?;
             run_collection_generic(parameters, vdaf, http_client, interval, &())
                 .await
                 .map_err(|err| Error::Anyhow(err.into()))

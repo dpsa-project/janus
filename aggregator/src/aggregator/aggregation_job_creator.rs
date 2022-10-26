@@ -6,6 +6,8 @@ use crate::{
     task::{Task, VdafInstance, PRIO3_AES128_VERIFY_KEY_LENGTH},
 };
 use anyhow::Result;
+use fixed::types::extra::U31;
+use fixed::FixedI32;
 use futures::future::try_join_all;
 use itertools::Itertools;
 use janus_core::time::{Clock, TimeExt};
@@ -16,10 +18,12 @@ use opentelemetry::{
 };
 use prio::{
     codec::Encode,
-    vdaf::prio3::Prio3Aes128CountVecMultithreaded,
     vdaf::{
         self,
-        prio3::{Prio3Aes128Count, Prio3Aes128Histogram, Prio3Aes128Sum},
+        prio3::{
+            Prio3Aes128Count, Prio3Aes128CountVecMultithreaded,
+            Prio3Aes128FixedPointBoundedL2VecSum, Prio3Aes128Histogram, Prio3Aes128Sum,
+        },
     },
 };
 use rand::{random, thread_rng, Rng};
@@ -235,6 +239,11 @@ impl<C: Clock + 'static> AggregationJobCreator<C> {
 
             VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Histogram { .. }) => {
                 self.create_aggregation_jobs_for_task_no_param::<PRIO3_AES128_VERIFY_KEY_LENGTH, Prio3Aes128Histogram>(task)
+                    .await
+            }
+
+            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { .. }) => {
+                self.create_aggregation_jobs_for_task_no_param::<PRIO3_AES128_VERIFY_KEY_LENGTH, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(task)
                     .await
             }
 
