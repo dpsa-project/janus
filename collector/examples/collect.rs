@@ -5,15 +5,13 @@ use clap::{
     ArgAction, CommandFactory, FromArgMatches, Parser, ValueEnum,
 };
 use derivative::Derivative;
-use fixed::types::extra::U31;
-use fixed::FixedI32;
+use fixed::{types::extra::U31, FixedI32};
 use janus_collector::{default_http_client, Collector, CollectorParameters};
 use janus_core::{hpke::HpkePrivateKey, task::AuthenticationToken};
 use janus_messages::{Duration, HpkeConfig, Interval, TaskId, Time};
-use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 use prio::{
     codec::Decode,
-    vdaf::{self, prio3::Prio3},
+    vdaf::{self, prio3::Prio3, prio3::Prio3Aes128FixedPointBoundedL2VecSum},
 };
 use std::fmt::Debug;
 use tracing_log::LogTracer;

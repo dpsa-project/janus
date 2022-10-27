@@ -1,5 +1,6 @@
 use backoff::{backoff::Backoff, ExponentialBackoffBuilder};
 use base64::URL_SAFE_NO_PAD;
+use fixed_macro::fixed;
 use futures::future::join_all;
 use janus_aggregator::task::PRIO3_AES128_VERIFY_KEY_LENGTH;
 use janus_core::{
@@ -17,8 +18,6 @@ use reqwest::{header::CONTENT_TYPE, StatusCode, Url};
 use serde_json::{json, Value};
 use std::time::Duration as StdDuration;
 use testcontainers::RunnableImage;
-
-use fixed_macro::fixed;
 
 const JSON_MEDIA_TYPE: &str = "application/json";
 const TIME_PRECISION: u64 = 3600;
@@ -198,7 +197,6 @@ async fn run(
         .send()
         .await
         .unwrap();
-
     assert_eq!(collector_add_task_response.status(), StatusCode::OK);
     assert_eq!(
         collector_add_task_response

@@ -22,8 +22,7 @@ use crate::{
     task::{Task, VdafInstance, VerifyKey, PRIO3_AES128_VERIFY_KEY_LENGTH},
 };
 use bytes::Bytes;
-use fixed::types::extra::U31;
-use fixed::FixedI32;
+use fixed::{types::extra::U31, FixedI32};
 use futures::try_join;
 use http::{
     header::{CACHE_CONTROL, CONTENT_TYPE, LOCATION},

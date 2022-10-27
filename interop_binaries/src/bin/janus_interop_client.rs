@@ -1,8 +1,7 @@
 use anyhow::{anyhow, Context};
 use base64::URL_SAFE_NO_PAD;
 use clap::{value_parser, Arg, Command};
-use fixed::types::extra::U31;
-use fixed::FixedI32;
+use fixed::{types::extra::U31, FixedI32};
 use janus_aggregator::task::VdafInstance;
 use janus_client::ClientParameters;
 use janus_core::time::{MockClock, RealClock};
@@ -12,10 +11,9 @@ use janus_interop_binaries::{
     NumberAsString, VdafObject,
 };
 use janus_messages::{Duration, Role, TaskId, Time};
-use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 use prio::{
     codec::Decode,
-    vdaf::{prio3::Prio3, Vdaf},
+    vdaf::{prio3::Prio3, prio3::Prio3Aes128FixedPointBoundedL2VecSum, Vdaf},
 };
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, SocketAddr};

@@ -2,8 +2,7 @@ use anyhow::{anyhow, Context};
 use backoff::ExponentialBackoffBuilder;
 use base64::URL_SAFE_NO_PAD;
 use clap::{value_parser, Arg, Command};
-use fixed::types::extra::U31;
-use fixed::FixedI32;
+use fixed::{types::extra::U31, FixedI32};
 use janus_aggregator::task::VdafInstance;
 use janus_collector::{Collector, CollectorParameters};
 use janus_core::{hpke::HpkePrivateKey, task::AuthenticationToken};
@@ -13,6 +12,7 @@ use janus_interop_binaries::{
     HpkeConfigRegistry, NumberAsString, VdafObject,
 };
 use janus_messages::{Duration, HpkeConfig, Interval, TaskId, Time};
+use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 use prio::{
     codec::{Decode, Encode},
     vdaf::{self, prio3::Prio3},
@@ -29,7 +29,6 @@ use std::{
 use tokio::{spawn, sync::Mutex, task::JoinHandle};
 use warp::{hyper::StatusCode, reply::Response, Filter, Reply};
 
-use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct AddTaskRequest {

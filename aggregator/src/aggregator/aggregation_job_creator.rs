@@ -6,8 +6,7 @@ use crate::{
     task::{Task, VdafInstance, PRIO3_AES128_VERIFY_KEY_LENGTH},
 };
 use anyhow::Result;
-use fixed::types::extra::U31;
-use fixed::FixedI32;
+use fixed::{types::extra::U31, FixedI32};
 use futures::future::try_join_all;
 use itertools::Itertools;
 use janus_core::time::{Clock, TimeExt};

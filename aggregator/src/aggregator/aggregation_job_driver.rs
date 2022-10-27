@@ -12,8 +12,7 @@ use crate::{
 };
 use anyhow::{anyhow, Context as _, Result};
 use derivative::Derivative;
-use fixed::types::extra::U31;
-use fixed::FixedI32;
+use fixed::{types::extra::U31, FixedI32};
 use futures::{
     future::{try_join_all, BoxFuture, FutureExt},
     try_join,

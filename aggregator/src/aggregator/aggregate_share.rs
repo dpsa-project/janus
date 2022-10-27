@@ -11,8 +11,7 @@ use crate::{
     task::{Task, VdafInstance, PRIO3_AES128_VERIFY_KEY_LENGTH},
 };
 use derivative::Derivative;
-use fixed::types::extra::U31;
-use fixed::FixedI32;
+use fixed::{types::extra::U31, FixedI32};
 use futures::{future::BoxFuture, try_join};
 #[cfg(test)]
 use janus_core::test_util::dummy_vdaf;

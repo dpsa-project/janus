@@ -716,7 +716,7 @@ mod tests {
         let collector = setup_collector(vdaf);
 
         let batch_interval = Interval::new(
-            Time::from_seconds_since_epoch(2_000_000), // TODO why???
+            Time::from_seconds_since_epoch(1_000_000), // TODO why???
             Duration::from_seconds(3600),
         )
         .unwrap();
