@@ -23,9 +23,9 @@ impl JanusTasksClient
         }
     }
 
-    pub async fn create_session(self, id: TrainingSessionId) -> Result<()>
+    pub async fn create_session(&self, id: TrainingSessionId) -> Result<()>
     {
-        let res = self.http_client.get(self.endpoint)
+        let res = self.http_client.get(self.endpoint.clone())
             .query(&[("training_session_id", id)])
             .send()
             .await?;
@@ -33,7 +33,7 @@ impl JanusTasksClient
         let status = res.status();
         if !status.is_success()
         {
-            return Err(anyhow!("'create session' return error, {:?}", res.status()));
+            return Err(anyhow!("'create session' returned error, {:?}", res.status()));
         }
 
         Ok(())
