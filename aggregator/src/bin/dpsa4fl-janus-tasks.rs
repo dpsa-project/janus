@@ -3,7 +3,7 @@ use std::{path::Path, net::SocketAddr, time::Instant, sync::Mutex, fmt::Display}
 
 use anyhow::{anyhow, Context, Result, Error};
 use janus_core::time::{Clock, RealClock};
-use janus_aggregator::{datastore::{Datastore, self}, task::Task, config::{CommonConfig, BinaryConfig}, binary_utils::{database_pool, datastore, CommonBinaryOptions, BinaryOptions, janus_main, job_driver::JobDriver, setup_signal_handler}};
+use janus_aggregator::{datastore::{Datastore, self}, task::Task, config::{CommonConfig, BinaryConfig}, binary_utils::{database_pool, datastore, CommonBinaryOptions, BinaryOptions, janus_main, job_driver::JobDriver, setup_signal_handler}, dpsa4fl::core::TrainingSessionId};
 use http::{
     header::{CACHE_CONTROL, CONTENT_TYPE, LOCATION},
     HeaderMap, StatusCode,
@@ -279,43 +279,6 @@ impl BinaryConfig for Config {
 }
 
 
-//////////////////////////////////////////////////
-// data structures:
-
-/// DAP protocol message representing an identifier for an HPKE config.
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct TrainingSessionId(u16);
-
-impl Display for TrainingSessionId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl Encode for TrainingSessionId {
-    fn encode(&self, bytes: &mut Vec<u8>) {
-        self.0.encode(bytes);
-    }
-}
-
-impl Decode for TrainingSessionId {
-    fn decode(bytes: &mut Cursor<&[u8]>) -> Result<Self, CodecError> {
-        Ok(Self(u16::decode(bytes)?))
-    }
-}
-
-impl From<u16> for TrainingSessionId {
-    fn from(value: u16) -> TrainingSessionId {
-        TrainingSessionId(value)
-    }
-}
-
-impl From<TrainingSessionId> for u16 {
-    fn from(id: TrainingSessionId) -> u16 {
-        id.0
-    }
-}
-
 
 //////////////////////////////////////////////////
 // self:
@@ -367,10 +330,10 @@ impl<C: Clock> TaskProvisioner<C>
         // https://www.ietf.org/archive/id/draft-ietf-ppm-dap-02.html#section-4.3.1
         let task_id_base64 = task_id_base64.ok_or(anyhow!("task_id parameter not given"))?;
 
-        let task_id_bytes = base64::decode_config(task_id_base64, base64::URL_SAFE_NO_PAD)
-            .map_err(|_| anyhow!("unrecognized message"))?;
-        let task_id = TaskId::get_decoded(&task_id_bytes)
-            .map_err(|_| anyhow!("unrecognized message"))?;
+        let task_id_bytes = base64::decode_config(task_id_base64, base64::URL_SAFE_NO_PAD)?;
+            // .map_err(|_| anyhow!("unrecognized message"))?;
+        let task_id = TaskId::get_decoded(&task_id_bytes)?;
+            // .map_err(|_| anyhow!("unrecognized message"))?;
 
         // provision_new_task(, common_options, tasks)
         // let task : Task = Task::new(task_id, _
