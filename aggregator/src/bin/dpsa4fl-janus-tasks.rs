@@ -1,5 +1,5 @@
 
-use std::{path::Path, net::SocketAddr, time::Instant};
+use std::{path::Path, net::SocketAddr, time::Instant, sync::Mutex, fmt::Display};
 
 use anyhow::{anyhow, Context, Result, Error};
 use janus_core::time::{Clock, RealClock};
@@ -8,9 +8,9 @@ use http::{
     header::{CACHE_CONTROL, CONTENT_TYPE, LOCATION},
     HeaderMap, StatusCode,
 };
-use janus_messages::TaskId;
+use janus_messages::{TaskId, HpkeConfig};
 use opentelemetry::metrics::{Unit, Meter, Histogram};
-use prio::codec::Decode;
+use prio::codec::{Decode, Encode, CodecError};
 use serde_json::json;
 use tokio::fs;
 use serde::{Deserialize, Serialize};
@@ -150,38 +150,74 @@ pub fn taskprovision_filter<C: Clock>(
 
     let aggregator = Arc::new(TaskProvisioner::new(datastore, clock, meter));
 
-    let hpke_config_routing = warp::path("provision");
-    let hpke_config_responding = warp::get()
+    //-------------------------------------------------------
+    // create new training session
+    let create_session_routing = warp::path("create_session");
+    let create_session_responding = warp::get()
         .and(with_cloned_value(Arc::clone(&aggregator)))
         .and(warp::query::<HashMap<String, String>>())
         .then(
             |aggregator: Arc<TaskProvisioner<C>>, query_params: HashMap<String, String>| async move {
-                let hpke_config_bytes = aggregator
-                    .handle_task_provision(
-                        query_params.get("task_id").map(String::as_ref)
-                    )
-                    .await?;
+                let create_session_bytes = aggregator
+                    .handle_create_session(
+                        query_params.get("training_session_id").map(String::as_ref)
+                    )?;
                 http::Response::builder()
                     .header(CACHE_CONTROL, "max-age=86400")
                     // .header(CONTENT_TYPE, HpkeConfig::MEDIA_TYPE)
-                    .body(hpke_config_bytes)
+                    .body(create_session_bytes)
                     .map_err::<anyhow::Error,_>(|err| err.into())
                     // .map_err(|err| Error::Internal(format!("couldn't produce response: {}", err)))
             },
         );
-    let hpke_config_endpoint = compose_common_wrappers(
-        hpke_config_routing,
-        hpke_config_responding,
+    let create_session_endpoint = compose_common_wrappers(
+        create_session_routing,
+        create_session_responding,
         warp::cors()
             .allow_any_origin()
             .allow_method("GET")
             .max_age(CORS_PREFLIGHT_CACHE_AGE)
             .build(),
         response_time_histogram.clone(),
-        "hpke_config",
+        "create_session",
     );
 
-    Ok(hpke_config_endpoint
+
+    //-------------------------------------------------------
+    // start a training round
+    let start_round_routing = warp::path("start_round");
+    let start_round_responding = warp::get()
+        .and(with_cloned_value(Arc::clone(&aggregator)))
+        .and(warp::query::<HashMap<String, String>>())
+        .then(
+            |aggregator: Arc<TaskProvisioner<C>>, query_params: HashMap<String, String>| async move {
+                let start_round_bytes = aggregator
+                    .handle_start_round(
+                        query_params.get("task_id").map(String::as_ref)
+                    )
+                    .await?;
+                http::Response::builder()
+                    .header(CACHE_CONTROL, "max-age=86400")
+                    // .header(CONTENT_TYPE, HpkeConfig::MEDIA_TYPE)
+                    .body(start_round_bytes)
+                    .map_err::<anyhow::Error,_>(|err| err.into())
+                    // .map_err(|err| Error::Internal(format!("couldn't produce response: {}", err)))
+            },
+        );
+    let start_round_endpoint = compose_common_wrappers(
+        start_round_routing,
+        start_round_responding,
+        warp::cors()
+            .allow_any_origin()
+            .allow_method("GET")
+            .max_age(CORS_PREFLIGHT_CACHE_AGE)
+            .build(),
+        response_time_histogram.clone(),
+        "start_round",
+    );
+
+    Ok(start_round_endpoint
+       .or(create_session_endpoint)
        // .or(upload_endpoint)
        // .or(aggregate_endpoint)
        // .or(collect_endpoint)
@@ -243,19 +279,64 @@ impl BinaryConfig for Config {
 }
 
 
+//////////////////////////////////////////////////
+// data structures:
+
+/// DAP protocol message representing an identifier for an HPKE config.
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct TrainingSessionId(u16);
+
+impl Display for TrainingSessionId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Encode for TrainingSessionId {
+    fn encode(&self, bytes: &mut Vec<u8>) {
+        self.0.encode(bytes);
+    }
+}
+
+impl Decode for TrainingSessionId {
+    fn decode(bytes: &mut Cursor<&[u8]>) -> Result<Self, CodecError> {
+        Ok(Self(u16::decode(bytes)?))
+    }
+}
+
+impl From<u16> for TrainingSessionId {
+    fn from(value: u16) -> TrainingSessionId {
+        TrainingSessionId(value)
+    }
+}
+
+impl From<TrainingSessionId> for u16 {
+    fn from(id: TrainingSessionId) -> u16 {
+        id.0
+    }
+}
 
 
 //////////////////////////////////////////////////
 // self:
 
+
+struct TrainingSession
+{
+    hpke_config: HpkeConfig,
+}
+
 pub struct TaskProvisioner<C: Clock>
 {
-        /// Datastore used for durable storage.
-        datastore: Arc<Datastore<C>>,
-        /// Clock used to sample time.
-        clock: C,
-        // Cache of task aggregators.
-        // task_aggregators: Mutex<HashMap<TaskId, Arc<TaskAggregator>>>,
+    /// Datastore used for durable storage.
+    datastore: Arc<Datastore<C>>,
+    /// Clock used to sample time.
+    clock: C,
+    // Cache of task aggregators.
+    // task_aggregators: Mutex<HashMap<TaskId, Arc<TaskAggregator>>>,
+
+    /// Currently active training runs.
+    training_sessions: Mutex<HashMap<TrainingSessionId, Arc<TrainingSession>>>,
 }
 
 impl<C: Clock> TaskProvisioner<C>
@@ -273,16 +354,18 @@ impl<C: Clock> TaskProvisioner<C>
         Self {
             datastore,
             clock,
+            training_sessions: Mutex::new(HashMap::new()),
             // task_aggregators: Mutex::new(HashMap::new()),
             // upload_decrypt_failure_counter,
             // aggregate_step_failure_counter,
         }
     }
 
-    async fn handle_task_provision(&self, task_id_base64: Option<&[u8]>) -> Result<Vec<u8>, Error> {
+    async fn handle_start_round(&self, task_id_base64: Option<&[u8]>) -> Result<Vec<u8>, Error>
+    {
         // Task ID is optional in an HPKE config request, but Janus requires it.
         // https://www.ietf.org/archive/id/draft-ietf-ppm-dap-02.html#section-4.3.1
-        let task_id_base64 = task_id_base64.ok_or(anyhow!("could not parse task id"))?;
+        let task_id_base64 = task_id_base64.ok_or(anyhow!("task_id parameter not given"))?;
 
         let task_id_bytes = base64::decode_config(task_id_base64, base64::URL_SAFE_NO_PAD)
             .map_err(|_| anyhow!("unrecognized message"))?;
@@ -300,6 +383,15 @@ impl<C: Clock> TaskProvisioner<C>
         // let task_aggregator = self.task_aggregator_for(&task_id).await?;
         // Ok(task_aggregator.handle_hpke_config().get_encoded())
 
+    }
+
+    fn handle_create_session(&self, training_session_id: Option<&[u8]>) -> Result<Vec<u8>, Error>
+    {
+        let training_session_id = training_session_id.ok_or(anyhow!("training_session_id parameter not given."))?;
+        let training_session_id = TrainingSessionId::get_decoded(&training_session_id)?;
+
+        println!("creating training session with id {}", training_session_id);
+        Ok(vec![])
     }
 }
 
