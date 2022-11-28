@@ -1,20 +1,24 @@
 
-use std::{path::Path, net::SocketAddr, time::Instant, sync::Mutex, fmt::Display};
+use std::{path::Path, net::SocketAddr, time::Instant, fmt::Display};
 
 use anyhow::{anyhow, Context, Result, Error};
-use janus_core::time::{Clock, RealClock};
-use janus_aggregator::{datastore::{Datastore, self}, task::Task, config::{CommonConfig, BinaryConfig}, binary_utils::{database_pool, datastore, CommonBinaryOptions, BinaryOptions, janus_main, job_driver::JobDriver, setup_signal_handler}, dpsa4fl::core::TrainingSessionId};
+use base64::URL_SAFE_NO_PAD;
+use janus_core::{time::{Clock, RealClock}, task::AuthenticationToken, hpke::HpkePrivateKey};
+use janus_aggregator::{datastore::{Datastore, self}, task::{Task, QueryType, VdafInstance}, config::{CommonConfig, BinaryConfig}, binary_utils::{database_pool, datastore, CommonBinaryOptions, BinaryOptions, janus_main, job_driver::JobDriver, setup_signal_handler}, dpsa4fl::core::{TrainingSessionId, HpkeConfigRegistry}, SecretBytes};
 use http::{
     header::{CACHE_CONTROL, CONTENT_TYPE, LOCATION},
     HeaderMap, StatusCode,
 };
-use janus_messages::{TaskId, HpkeConfig};
+use janus_messages::{TaskId, HpkeConfig, Role, Time, Duration};
 use opentelemetry::metrics::{Unit, Meter, Histogram};
 use prio::codec::{Decode, Encode, CodecError};
+use rand::random;
 use serde_json::json;
 use tokio::fs;
+use tokio::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
+use url::Url;
 use std::{
     collections::BTreeMap,
     path::PathBuf,
@@ -153,20 +157,39 @@ pub fn taskprovision_filter<C: Clock>(
     //-------------------------------------------------------
     // create new training session
     let create_session_routing = warp::path("create_session");
-    let create_session_responding = warp::get()
+    let create_session_responding = warp::post()
         .and(with_cloned_value(Arc::clone(&aggregator)))
-        .and(warp::query::<HashMap<String, String>>())
+        // .and(warp::query::<HashMap<String, String>>())
+        .and(warp::body::json())
         .then(
-            |aggregator: Arc<TaskProvisioner<C>>, query_params: HashMap<String, String>| async move {
-                let create_session_bytes = aggregator
-                    .handle_create_session(
-                        query_params.get("training_session_id").map(String::as_ref)
-                    )?;
-                http::Response::builder()
-                    .header(CACHE_CONTROL, "max-age=86400")
-                    // .header(CONTENT_TYPE, HpkeConfig::MEDIA_TYPE)
-                    .body(create_session_bytes)
-                    .map_err::<anyhow::Error,_>(|err| err.into())
+            |aggregator: Arc<TaskProvisioner<C>>, request: CreateTrainingSessionRequest| async move {
+                let result = aggregator.handle_create_session(request).await;
+                match result
+                {
+                    Ok(training_session_id) =>
+                    {
+                        let response = CreateTrainingSessionResponse { training_session_id };
+                        let response = warp::reply::with_status(warp::reply::json(&response), StatusCode::OK).into_response();
+                        Ok(response)
+                    },
+                    Err(err) =>
+                    {
+                        let response = warp::reply::with_status(warp::reply::json(&err.to_string()), StatusCode::BAD_REQUEST).into_response();
+                        Ok(response)
+                    },
+                }
+                // let status = match response {
+                //     Ok(r) => StatusCode::OK,
+                //     Err(e) => {
+                //         println!("Error when creating session: {:?}", e);
+                //         StatusCode::SEE_OTHER
+                //     }
+                // };
+                // http::Response::builder()
+                //     .header(CACHE_CONTROL, "max-age=86400")
+                //     // .header(CONTENT_TYPE, HpkeConfig::MEDIA_TYPE)
+                //     .body(create_session_bytes)
+                //     .map_err::<anyhow::Error,_>(|err| err.into())
                     // .map_err(|err| Error::Internal(format!("couldn't produce response: {}", err)))
             },
         );
@@ -175,7 +198,7 @@ pub fn taskprovision_filter<C: Clock>(
         create_session_responding,
         warp::cors()
             .allow_any_origin()
-            .allow_method("GET")
+            .allow_method("POST")
             .max_age(CORS_PREFLIGHT_CACHE_AGE)
             .build(),
         response_time_histogram.clone(),
@@ -193,7 +216,8 @@ pub fn taskprovision_filter<C: Clock>(
             |aggregator: Arc<TaskProvisioner<C>>, query_params: HashMap<String, String>| async move {
                 let start_round_bytes = aggregator
                     .handle_start_round(
-                        query_params.get("task_id").map(String::as_ref)
+                        query_params.get("training_session_id").map(String::as_ref),
+                        query_params.get("task_id").map(String::as_ref),
                     )
                     .await?;
                 http::Response::builder()
@@ -278,15 +302,67 @@ impl BinaryConfig for Config {
     }
 }
 
+//////////////////////////////////////////////////
+// api:
+//
+//--- create training session ---
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateTrainingSessionRequest
+{
+    // endpoints
+    leader_endpoint: Url,
+    helper_endpoint: Url,
+
+    //
+    role: Role,
+    num_gradient_entries: usize,
+
+    // needs to be the same for both aggregators (section 4.2 of ppm-draft)
+    verify_key_encoded: String, // in unpadded base64url
+
+    collector_hpke_config: HpkeConfig,
+
+    // auth tokens
+    collector_auth_token_encoded: String, // in unpadded base64url
+    leader_auth_token_encoded: String, // in unpadded base64url
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateTrainingSessionResponse
+{
+    training_session_id: TrainingSessionId
+}
 
 
 //////////////////////////////////////////////////
 // self:
 
+const TIME_PRECISION: u64 = 3600;
 
 struct TrainingSession
 {
-    hpke_config: HpkeConfig,
+    // endpoints
+    leader_endpoint: Url,
+    helper_endpoint: Url,
+
+    //
+    role: Role,
+    num_gradient_entries: usize,
+
+    // needs to be the same for both aggregators (section 4.2 of ppm-draft)
+    verify_key: SecretBytes,
+
+    collector_hpke_config: HpkeConfig,
+
+    // auth tokens
+    collector_auth_token: AuthenticationToken,
+    leader_auth_token: AuthenticationToken,
+
+    // my hpke config & key
+    hpke_config_and_key: (HpkeConfig, HpkePrivateKey),
 }
 
 pub struct TaskProvisioner<C: Clock>
@@ -300,6 +376,9 @@ pub struct TaskProvisioner<C: Clock>
 
     /// Currently active training runs.
     training_sessions: Mutex<HashMap<TrainingSessionId, Arc<TrainingSession>>>,
+
+    /// hpke config registry
+    keyring: Mutex<HpkeConfigRegistry>,
 }
 
 impl<C: Clock> TaskProvisioner<C>
@@ -318,43 +397,107 @@ impl<C: Clock> TaskProvisioner<C>
             datastore,
             clock,
             training_sessions: Mutex::new(HashMap::new()),
+            keyring: Mutex::new(HpkeConfigRegistry::new()),
             // task_aggregators: Mutex::new(HashMap::new()),
             // upload_decrypt_failure_counter,
             // aggregate_step_failure_counter,
         }
     }
 
-    async fn handle_start_round(&self, task_id_base64: Option<&[u8]>) -> Result<Vec<u8>, Error>
+    async fn handle_start_round(&self, training_session_id: Option<&[u8]>, task_id_base64: Option<&[u8]>) -> Result<Vec<u8>, Error>
     {
-        // Task ID is optional in an HPKE config request, but Janus requires it.
-        // https://www.ietf.org/archive/id/draft-ietf-ppm-dap-02.html#section-4.3.1
-        let task_id_base64 = task_id_base64.ok_or(anyhow!("task_id parameter not given"))?;
-
-        let task_id_bytes = base64::decode_config(task_id_base64, base64::URL_SAFE_NO_PAD)?;
-            // .map_err(|_| anyhow!("unrecognized message"))?;
-        let task_id = TaskId::get_decoded(&task_id_bytes)?;
-            // .map_err(|_| anyhow!("unrecognized message"))?;
-
-        // provision_new_task(, common_options, tasks)
-        // let task : Task = Task::new(task_id, _
-        //                             , query_type, vdaf, role, vdaf_verify_keys, max_batch_query_count, task_expiration, min_batch_size, time_precision, tolerable_clock_skew, collector_hpke_config, aggregator_auth_tokens, collector_auth_tokens, hpke_keys);
-
-        // provision_tasks(&self.datastore, vec![task]).await?;
-        println!("provisioning task now with id {}", task_id);
-        Ok(vec![])
-
-        // let task_aggregator = self.task_aggregator_for(&task_id).await?;
-        // Ok(task_aggregator.handle_hpke_config().get_encoded())
-
-    }
-
-    fn handle_create_session(&self, training_session_id: Option<&[u8]>) -> Result<Vec<u8>, Error>
-    {
+        //---------------------- decode parameters --------------------------
+        // session id
         let training_session_id = training_session_id.ok_or(anyhow!("training_session_id parameter not given."))?;
         let training_session_id = TrainingSessionId::get_decoded(&training_session_id)?;
 
-        println!("creating training session with id {}", training_session_id);
+        // get training session with this id
+        let training_sessions_lock = self.training_sessions.lock().await;
+        let training_session = training_sessions_lock.get(&training_session_id)
+            .ok_or(anyhow!("There is no training session with id {}", &training_session_id))?;
+
+        // task id
+        let task_id_base64 = task_id_base64.ok_or(anyhow!("task_id parameter not given"))?;
+
+        let task_id_bytes = base64::decode_config(task_id_base64, base64::URL_SAFE_NO_PAD)?;
+        let task_id = TaskId::get_decoded(&task_id_bytes)?;
+
+
+
+
+        // -------------------- create new task -----------------------------
+
+        let task = Task::new(
+            task_id,
+            vec![training_session.leader_endpoint.clone(), training_session.helper_endpoint.clone()] ,
+            QueryType::FixedSize { max_batch_size: u64::MAX },
+            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries: training_session.num_gradient_entries }),
+            training_session.role,
+            vec![training_session.verify_key.clone()],
+            1, // max_batch_query_count
+            Time::from_seconds_since_epoch(u64::MAX), // task_expiration
+            2, // min_batch_size
+            Duration::from_seconds(TIME_PRECISION), // time_precision
+            Duration::from_seconds(u64::MAX), // tolerable_clock_skew,
+            training_session.collector_hpke_config.clone(),
+            vec![training_session.leader_auth_token.clone()], // leader auth tokens
+            vec![training_session.collector_auth_token.clone()], // collector auth tokens
+            [training_session.hpke_config_and_key.clone()],
+        )?;
+
+        println!("provisioning task now with id {}", task_id);
+        provision_tasks(&self.datastore, vec![task]).await?;
         Ok(vec![])
+    }
+
+    async fn handle_create_session(&self, request: CreateTrainingSessionRequest) -> Result<TrainingSessionId>
+    {
+        // decode fields
+        let CreateTrainingSessionRequest {
+            leader_endpoint,
+            helper_endpoint,
+            role,
+            num_gradient_entries,
+            verify_key_encoded,
+            collector_hpke_config,
+            collector_auth_token_encoded,
+            leader_auth_token_encoded
+        } = request;
+
+        let collector_auth_token = AuthenticationToken::from(collector_auth_token_encoded.into_bytes());
+        let leader_auth_token = AuthenticationToken::from(leader_auth_token_encoded.into_bytes());
+        let verify_key = SecretBytes::new(
+            base64::decode_config(verify_key_encoded, URL_SAFE_NO_PAD)
+                .context("invalid base64url content in \"verifyKey\"")?,
+        );
+
+        // generate new hpke config and private key
+        let hpke_config_and_key = self.keyring.lock().await.get_random_keypair();
+
+        // create session
+        let training_session = TrainingSession {
+            leader_endpoint,
+            helper_endpoint,
+            role,
+            num_gradient_entries,
+            verify_key,
+            collector_hpke_config,
+            collector_auth_token,
+            leader_auth_token,
+            hpke_config_and_key,
+        };
+
+        // new id
+        let id: u16 = random();
+        let training_session_id = id.into();
+
+        // insert into list
+        println!("creating training session with id {}", training_session_id);
+        let mut sessions = self.training_sessions.lock().await;
+        sessions.insert(training_session_id, Arc::new(training_session));
+
+        // respond with id
+        Ok(training_session_id)
     }
 }
 
@@ -362,49 +505,8 @@ impl<C: Clock> TaskProvisioner<C>
 //////////////////////////////////////////////////
 // code:
 
-async fn provision_new_task(
-    config: CommonConfig,
-    common_options: CommonBinaryOptions,
-    tasks: Vec<Task>,
-) -> Result<()>
-{
-    // let kube_client = kube::Client::try_default()
-    //     .await
-    //     .context("couldn't connect to Kubernetes environment")?;
-    // let config: Config = todo!(); // read_config(common_options)?;
-    // install_tracing_and_metrics_handlers(config.common_config())?;
-    let pool = database_pool(
-        &config.database,
-        common_options.database_password.as_deref(),
-    ) .await?;
-
-    // get keys from the binary options
-    let datastore_keys = common_options.datastore_keys;
-
-    let datastore = datastore(
-        pool,
-        RealClock::default(),
-        &datastore_keys,
-        // &kubernetes_secret_options
-        //     .datastore_keys(common_options, kube_client)
-        //     .await?,
-    )?;
-
-    provision_tasks(&datastore, tasks).await
-}
-
 
 async fn provision_tasks<C: Clock>(datastore: &Datastore<C>, tasks: Vec<Task>) -> Result<()> {
-    // Read tasks file.
-    // info!("Reading tasks file");
-    // let tasks: Vec<Task> = {
-    //     let task_file_contents = fs::read_to_string(tasks_file)
-    //         .await
-    //         .with_context(|| format!("couldn't read tasks file {:?}", tasks_file))?;
-    //     serde_yaml::from_str(&task_file_contents)
-    //         .with_context(|| format!("couldn't parse tasks file {:?}", tasks_file))?
-    // };
-
     // Write all tasks requested.
     let tasks = Arc::new(tasks);
     // info!(task_count = %tasks.len(), "Writing tasks");
