@@ -7,10 +7,11 @@
 use std::{fmt::Display, io::Cursor, collections::HashMap};
 
 use janus_core::hpke::{HpkePrivateKey, generate_hpke_config_and_private_key};
-use janus_messages::{HpkeConfigId, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId};
+use janus_messages::{HpkeConfigId, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId, Role};
 use prio::codec::{Encode, Decode, CodecError};
 use rand::random;
 use serde::{Serialize, Deserialize};
+use url::Url;
 
 /// DPSA protocol message representing an identifier for a Training Session.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -81,5 +82,39 @@ impl HpkeConfigRegistry {
     pub fn get_random_keypair(&mut self) -> (HpkeConfig, HpkePrivateKey) {
         self.fetch_keypair(random::<u8>().into())
     }
+}
+
+//////////////////////////////////////////////////
+// api:
+//
+//--- create training session ---
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTrainingSessionRequest
+{
+    // endpoints
+    pub leader_endpoint: Url,
+    pub helper_endpoint: Url,
+
+    //
+    pub role: Role,
+    pub num_gradient_entries: usize,
+
+    // needs to be the same for both aggregators (section 4.2 of ppm-draft)
+    pub verify_key_encoded: String, // in unpadded base64url
+
+    pub collector_hpke_config: HpkeConfig,
+
+    // auth tokens
+    pub collector_auth_token_encoded: String, // in unpadded base64url
+    pub leader_auth_token_encoded: String, // in unpadded base64url
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTrainingSessionResponse
+{
+    pub training_session_id: TrainingSessionId
 }
 

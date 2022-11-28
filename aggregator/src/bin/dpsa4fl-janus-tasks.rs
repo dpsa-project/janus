@@ -4,7 +4,7 @@ use std::{path::Path, net::SocketAddr, time::Instant, fmt::Display};
 use anyhow::{anyhow, Context, Result, Error};
 use base64::URL_SAFE_NO_PAD;
 use janus_core::{time::{Clock, RealClock}, task::AuthenticationToken, hpke::HpkePrivateKey};
-use janus_aggregator::{datastore::{Datastore, self}, task::{Task, QueryType, VdafInstance}, config::{CommonConfig, BinaryConfig}, binary_utils::{database_pool, datastore, CommonBinaryOptions, BinaryOptions, janus_main, job_driver::JobDriver, setup_signal_handler}, dpsa4fl::core::{TrainingSessionId, HpkeConfigRegistry}, SecretBytes};
+use janus_aggregator::{datastore::{Datastore, self}, task::{Task, QueryType, VdafInstance}, config::{CommonConfig, BinaryConfig}, binary_utils::{database_pool, datastore, CommonBinaryOptions, BinaryOptions, janus_main, job_driver::JobDriver, setup_signal_handler}, dpsa4fl::core::{TrainingSessionId, HpkeConfigRegistry, CreateTrainingSessionRequest, CreateTrainingSessionResponse}, SecretBytes};
 use http::{
     header::{CACHE_CONTROL, CONTENT_TYPE, LOCATION},
     HeaderMap, StatusCode,
@@ -300,40 +300,6 @@ impl BinaryConfig for Config {
     fn common_config_mut(&mut self) -> &mut CommonConfig {
         &mut self.common_config
     }
-}
-
-//////////////////////////////////////////////////
-// api:
-//
-//--- create training session ---
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct CreateTrainingSessionRequest
-{
-    // endpoints
-    leader_endpoint: Url,
-    helper_endpoint: Url,
-
-    //
-    role: Role,
-    num_gradient_entries: usize,
-
-    // needs to be the same for both aggregators (section 4.2 of ppm-draft)
-    verify_key_encoded: String, // in unpadded base64url
-
-    collector_hpke_config: HpkeConfig,
-
-    // auth tokens
-    collector_auth_token_encoded: String, // in unpadded base64url
-    leader_auth_token_encoded: String, // in unpadded base64url
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct CreateTrainingSessionResponse
-{
-    training_session_id: TrainingSessionId
 }
 
 
