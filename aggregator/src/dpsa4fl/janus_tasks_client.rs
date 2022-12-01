@@ -66,13 +66,13 @@ impl JanusTasksClient
         };
 
         let leader_response = self.http_client
-            .post(self.leader_endpoint.clone())
+            .post(self.leader_endpoint.join("/create_session").unwrap())
             .json(&make_request(Role::Leader))
             .send()
             .await?;
 
         let helper_response = self.http_client
-            .post(self.leader_endpoint.clone())
+            .post(self.leader_endpoint.join("/create_session").unwrap())
             .json(&make_request(Role::Helper))
             .send()
             .await?;
