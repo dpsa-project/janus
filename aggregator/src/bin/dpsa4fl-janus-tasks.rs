@@ -436,6 +436,10 @@ impl<C: Clock> TaskProvisioner<C>
         // (take requested id if exists, else generate new one)
         let training_session_id = if let Some(id) = training_session_id
         {
+            if self.training_sessions.lock().await.contains_key(&id)
+            {
+                return Err(anyhow!("There already exists a training session with id {id}."));
+            }
             id
         } else
         {

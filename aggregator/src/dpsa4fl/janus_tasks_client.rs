@@ -87,7 +87,7 @@ impl JanusTasksClient
         };
 
         let helper_response = self.http_client
-            .post(self.leader_endpoint.join("/create_session").unwrap())
+            .post(self.helper_endpoint.join("/create_session").unwrap())
             .json(&make_request(Role::Helper, Some(leader_response.training_session_id)))
             .send()
             .await?;
