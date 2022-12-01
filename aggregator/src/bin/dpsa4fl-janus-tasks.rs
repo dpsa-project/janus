@@ -418,8 +418,10 @@ impl<C: Clock> TaskProvisioner<C>
 
     async fn handle_create_session(&self, request: CreateTrainingSessionRequest) -> Result<TrainingSessionId>
     {
+
         // decode fields
         let CreateTrainingSessionRequest {
+            training_session_id,
             leader_endpoint,
             helper_endpoint,
             role,
@@ -429,6 +431,17 @@ impl<C: Clock> TaskProvisioner<C>
             collector_auth_token_encoded,
             leader_auth_token_encoded
         } = request;
+
+        // prepare id
+        // (take requested id if exists, else generate new one)
+        let training_session_id = if let Some(id) = training_session_id
+        {
+            id
+        } else
+        {
+            let id: u16 = random();
+            id.into()
+        };
 
         let collector_auth_token = AuthenticationToken::from(collector_auth_token_encoded.into_bytes());
         let leader_auth_token = AuthenticationToken::from(leader_auth_token_encoded.into_bytes());
@@ -452,10 +465,6 @@ impl<C: Clock> TaskProvisioner<C>
             leader_auth_token,
             hpke_config_and_key,
         };
-
-        // new id
-        let id: u16 = random();
-        let training_session_id = id.into();
 
         // insert into list
         println!("creating training session with id {}", training_session_id);

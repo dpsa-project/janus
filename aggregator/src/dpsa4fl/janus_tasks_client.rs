@@ -47,14 +47,15 @@ impl JanusTasksClient
         }
     }
 
-    pub async fn create_session(&self) -> Result<()>
+    pub async fn create_session(&self) -> Result<TrainingSessionId>
     {
         let leader_auth_token_encoded = base64::encode_config(rand::random::<[u8; 16]>(), URL_SAFE_NO_PAD);
         let collector_auth_token_encoded = base64::encode_config(rand::random::<[u8; 16]>(), URL_SAFE_NO_PAD);
         let verify_key = rand::random::<[u8; PRIO3_AES128_VERIFY_KEY_LENGTH]>();
         let verify_key_encoded = base64::encode_config(&verify_key, URL_SAFE_NO_PAD);
 
-        let make_request = |role| CreateTrainingSessionRequest {
+        let make_request = |role, id| CreateTrainingSessionRequest {
+            training_session_id: id,
             leader_endpoint: self.leader_endpoint.clone(),
             helper_endpoint: self.helper_endpoint.clone(),
             role,
@@ -65,30 +66,61 @@ impl JanusTasksClient
             leader_auth_token_encoded: leader_auth_token_encoded.clone(),
         };
 
+        // send request to leader first
+        // and get response
         let leader_response = self.http_client
             .post(self.leader_endpoint.join("/create_session").unwrap())
-            .json(&make_request(Role::Leader))
+            .json(&make_request(Role::Leader, None))
             .send()
             .await?;
+        let leader_response = match leader_response.status()
+        {
+            StatusCode::OK =>
+            {
+                let response: CreateTrainingSessionResponse = leader_response.json().await?;
+                response
+            }
+            res =>
+            {
+                return Err(anyhow!("Got error from leader: {res}"));
+            }
+        };
 
         let helper_response = self.http_client
             .post(self.leader_endpoint.join("/create_session").unwrap())
-            .json(&make_request(Role::Helper))
+            .json(&make_request(Role::Helper, Some(leader_response.training_session_id)))
             .send()
             .await?;
 
-        match (leader_response.status(), helper_response.status())
+        let helper_response = match helper_response.status()
         {
-            (StatusCode::OK, StatusCode::OK) =>
+            StatusCode::OK =>
             {
-                println!("successfully created session with: {leader_response:?}\nand\n {helper_response:?}");
-                return Ok(());
+                let response: CreateTrainingSessionResponse = helper_response.json().await?;
+                response
             }
-            (res1, res2) =>
+            res =>
             {
-                return Err(anyhow!("Got errors results: \n {res1} \n {res2}"));
+                return Err(anyhow!("Got error from helper: {res}"));
             }
-        }
+        };
+
+        assert!(helper_response.training_session_id == leader_response.training_session_id, "leader and helper have different training session id!");
+
+        Ok(leader_response.training_session_id)
+
+        // match (helper_response.status())
+        // {
+        //     (StatusCode::OK, StatusCode::OK) =>
+        //     {
+        //         println!("successfully created session with: {leader_response:?}\nand\n {helper_response:?}");
+        //         return Ok(());
+        //     }
+        //     (res1, res2) =>
+        //     {
+        //         return Err(anyhow!("Got errors results: \n {res1} \n {res2}"));
+        //     }
+        // }
         // let res = self.http_client.get(self.leader_endpoint.clone())
         //     .query(&[("training_session_id", id)])
         //     .send()

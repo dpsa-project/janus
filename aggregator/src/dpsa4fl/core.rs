@@ -93,6 +93,9 @@ impl HpkeConfigRegistry {
 #[serde(rename_all = "camelCase")]
 pub struct CreateTrainingSessionRequest
 {
+    // id if known
+    pub training_session_id: Option<TrainingSessionId>,
+
     // endpoints
     pub leader_endpoint: Url,
     pub helper_endpoint: Url,
