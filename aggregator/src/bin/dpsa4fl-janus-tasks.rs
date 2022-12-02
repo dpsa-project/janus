@@ -196,7 +196,7 @@ pub fn taskprovision_filter<C: Clock>(
     //-------------------------------------------------------
     // start a training round
     let start_round_routing = warp::path("start_round");
-    let start_round_responding = warp::get()
+    let start_round_responding = warp::post()
         .and(with_cloned_value(Arc::clone(&aggregator)))
         // .and(warp::query::<HashMap<String, String>>())
         .and(warp::body::json())
