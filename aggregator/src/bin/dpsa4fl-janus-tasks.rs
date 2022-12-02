@@ -1,5 +1,5 @@
 
-use std::{path::Path, net::SocketAddr, time::Instant, fmt::Display};
+use std::{path::Path, net::SocketAddr, time::{Instant, UNIX_EPOCH}, fmt::Display};
 
 use anyhow::{anyhow, Context, Result, Error};
 use base64::URL_SAFE_NO_PAD;
@@ -384,6 +384,7 @@ impl<C: Clock> TaskProvisioner<C>
 
 
         // -------------------- create new task -----------------------------
+        let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 3600;
 
         let task = Task::new(
             task_id,
@@ -393,10 +394,10 @@ impl<C: Clock> TaskProvisioner<C>
             training_session.role,
             vec![training_session.verify_key.clone()],
             1, // max_batch_query_count
-            Time::from_seconds_since_epoch(u64::MAX), // task_expiration
+            Time::from_seconds_since_epoch(deadline), // task_expiration
             2, // min_batch_size
             Duration::from_seconds(TIME_PRECISION), // time_precision
-            Duration::from_seconds(u64::MAX), // tolerable_clock_skew,
+            Duration::from_seconds(1000), // tolerable_clock_skew,
             training_session.collector_hpke_config.clone(),
             vec![training_session.leader_auth_token.clone()], // leader auth tokens
             vec![training_session.collector_auth_token.clone()], // collector auth tokens
