@@ -2,7 +2,7 @@
 use base64::URL_SAFE_NO_PAD;
 use http::StatusCode;
 use janus_core::hpke::{HpkePrivateKey, generate_hpke_config_and_private_key};
-use janus_messages::{Role, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId};
+use janus_messages::{Role, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId, TaskId};
 use prio::codec::{Encode, Decode, CodecError};
 use anyhow::{anyhow, Context, Result, Error};
 use rand::random;
@@ -10,12 +10,14 @@ use url::Url;
 
 use crate::task::PRIO3_AES128_VERIFY_KEY_LENGTH;
 
-use super::core::{TrainingSessionId, CreateTrainingSessionRequest, CreateTrainingSessionResponse};
+use super::core::{TrainingSessionId, CreateTrainingSessionRequest, CreateTrainingSessionResponse, StartRoundRequest};
 
 
 pub struct JanusTasksClient
 {
     http_client: reqwest::Client,
+    external_leader_endpoint: Url,
+    external_helper_endpoint: Url,
     leader_endpoint: Url,
     helper_endpoint: Url,
     num_gradient_entries: usize,
@@ -26,7 +28,13 @@ pub struct JanusTasksClient
 
 impl JanusTasksClient
 {
-    pub fn new(leader_endpoint: Url, helper_endpoint: Url, num_gradient_entries: usize) -> Self
+    pub fn new(
+        external_leader_endpoint: Url,
+        external_helper_endpoint: Url,
+        leader_endpoint: Url,
+        helper_endpoint: Url,
+        num_gradient_entries: usize
+    ) -> Self
     {
         let hpke_id = random::<u8>().into();
         let (hpke_config, hpke_private_key) = generate_hpke_config_and_private_key(
@@ -39,6 +47,8 @@ impl JanusTasksClient
             );
         JanusTasksClient {
             http_client: reqwest::Client::new(),
+            external_leader_endpoint,
+            external_helper_endpoint,
             leader_endpoint,
             helper_endpoint,
             num_gradient_entries,
@@ -69,7 +79,7 @@ impl JanusTasksClient
         // send request to leader first
         // and get response
         let leader_response = self.http_client
-            .post(self.leader_endpoint.join("/create_session").unwrap())
+            .post(self.external_leader_endpoint.join("/create_session").unwrap())
             .json(&make_request(Role::Leader, None))
             .send()
             .await?;
@@ -87,7 +97,7 @@ impl JanusTasksClient
         };
 
         let helper_response = self.http_client
-            .post(self.helper_endpoint.join("/create_session").unwrap())
+            .post(self.external_helper_endpoint.join("/create_session").unwrap())
             .json(&make_request(Role::Helper, Some(leader_response.training_session_id)))
             .send()
             .await?;
@@ -109,29 +119,42 @@ impl JanusTasksClient
 
         Ok(leader_response.training_session_id)
 
-        // match (helper_response.status())
-        // {
-        //     (StatusCode::OK, StatusCode::OK) =>
-        //     {
-        //         println!("successfully created session with: {leader_response:?}\nand\n {helper_response:?}");
-        //         return Ok(());
-        //     }
-        //     (res1, res2) =>
-        //     {
-        //         return Err(anyhow!("Got errors results: \n {res1} \n {res2}"));
-        //     }
-        // }
-        // let res = self.http_client.get(self.leader_endpoint.clone())
-        //     .query(&[("training_session_id", id)])
-        //     .send()
-        //     .await?;
+    }
 
-        // let status = res.status();
-        // if !status.is_success()
-        // {
-        //     return Err(anyhow!("'create session' returned error, {:?}", res.status()));
-        // }
+    /// Send requests to the aggregators to start a new round.
+    ///
+    /// We return the task id with which the task can be collected.
+    pub async fn start_round(&self, training_session_id: TrainingSessionId) -> Result<TaskId>
+    {
+        let task_id: TaskId = random();
+        let task_id_encoded = base64::encode_config(&task_id.get_encoded(), URL_SAFE_NO_PAD);
+        let request: StartRoundRequest = StartRoundRequest {
+            training_session_id,
+            task_id_encoded,
+        };
+        let leader_response = self.http_client
+            .post(self.external_leader_endpoint.join("/start_round").unwrap())
+            .json(&request)
+            .send()
+            .await?;
 
+        let helper_response = self.http_client
+            .post(self.external_helper_endpoint.join("/start_round").unwrap())
+            .json(&request)
+            .send()
+            .await?;
+
+        match (leader_response.status(), helper_response.status())
+        {
+            (StatusCode::OK, StatusCode::OK) =>
+            {
+                Ok(task_id)
+            }
+            (res1, res2) =>
+            {
+                Err(anyhow!("Starting round not successful, results are: \n{res1}\n\n{res2}"))
+            }
+        }
     }
 
 }

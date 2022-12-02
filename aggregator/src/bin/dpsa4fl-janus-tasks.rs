@@ -4,7 +4,7 @@ use std::{path::Path, net::SocketAddr, time::Instant, fmt::Display};
 use anyhow::{anyhow, Context, Result, Error};
 use base64::URL_SAFE_NO_PAD;
 use janus_core::{time::{Clock, RealClock}, task::AuthenticationToken, hpke::HpkePrivateKey};
-use janus_aggregator::{datastore::{Datastore, self}, task::{Task, QueryType, VdafInstance}, config::{CommonConfig, BinaryConfig}, binary_utils::{database_pool, datastore, CommonBinaryOptions, BinaryOptions, janus_main, job_driver::JobDriver, setup_signal_handler}, dpsa4fl::core::{TrainingSessionId, HpkeConfigRegistry, CreateTrainingSessionRequest, CreateTrainingSessionResponse}, SecretBytes};
+use janus_aggregator::{datastore::{Datastore, self}, task::{Task, QueryType, VdafInstance}, config::{CommonConfig, BinaryConfig}, binary_utils::{database_pool, datastore, CommonBinaryOptions, BinaryOptions, janus_main, job_driver::JobDriver, setup_signal_handler}, dpsa4fl::core::{TrainingSessionId, HpkeConfigRegistry, CreateTrainingSessionRequest, CreateTrainingSessionResponse, StartRoundRequest, StartRoundResponse}, SecretBytes};
 use http::{
     header::{CACHE_CONTROL, CONTENT_TYPE, LOCATION},
     HeaderMap, StatusCode,
@@ -178,19 +178,6 @@ pub fn taskprovision_filter<C: Clock>(
                         Ok(response)
                     },
                 }
-                // let status = match response {
-                //     Ok(r) => StatusCode::OK,
-                //     Err(e) => {
-                //         println!("Error when creating session: {:?}", e);
-                //         StatusCode::SEE_OTHER
-                //     }
-                // };
-                // http::Response::builder()
-                //     .header(CACHE_CONTROL, "max-age=86400")
-                //     // .header(CONTENT_TYPE, HpkeConfig::MEDIA_TYPE)
-                //     .body(create_session_bytes)
-                //     .map_err::<anyhow::Error,_>(|err| err.into())
-                    // .map_err(|err| Error::Internal(format!("couldn't produce response: {}", err)))
             },
         );
     let create_session_endpoint = compose_common_wrappers(
@@ -211,21 +198,26 @@ pub fn taskprovision_filter<C: Clock>(
     let start_round_routing = warp::path("start_round");
     let start_round_responding = warp::get()
         .and(with_cloned_value(Arc::clone(&aggregator)))
-        .and(warp::query::<HashMap<String, String>>())
+        // .and(warp::query::<HashMap<String, String>>())
+        .and(warp::body::json())
         .then(
-            |aggregator: Arc<TaskProvisioner<C>>, query_params: HashMap<String, String>| async move {
-                let start_round_bytes = aggregator
-                    .handle_start_round(
-                        query_params.get("training_session_id").map(String::as_ref),
-                        query_params.get("task_id").map(String::as_ref),
-                    )
-                    .await?;
-                http::Response::builder()
-                    .header(CACHE_CONTROL, "max-age=86400")
-                    // .header(CONTENT_TYPE, HpkeConfig::MEDIA_TYPE)
-                    .body(start_round_bytes)
-                    .map_err::<anyhow::Error,_>(|err| err.into())
-                    // .map_err(|err| Error::Internal(format!("couldn't produce response: {}", err)))
+            |aggregator: Arc<TaskProvisioner<C>>, request: StartRoundRequest| async move {
+
+                let result = aggregator.handle_start_round(request).await;
+                match result
+                {
+                    Ok(()) =>
+                    {
+                        let response = StartRoundResponse { };
+                        let response = warp::reply::with_status(warp::reply::json(&response), StatusCode::OK).into_response();
+                        Ok(response)
+                    },
+                    Err(err) =>
+                    {
+                        let response = warp::reply::with_status(warp::reply::json(&err.to_string()), StatusCode::BAD_REQUEST).into_response();
+                        Ok(response)
+                    },
+                }
             },
         );
     let start_round_endpoint = compose_common_wrappers(
@@ -233,7 +225,7 @@ pub fn taskprovision_filter<C: Clock>(
         start_round_responding,
         warp::cors()
             .allow_any_origin()
-            .allow_method("GET")
+            .allow_method("POST")
             .max_age(CORS_PREFLIGHT_CACHE_AGE)
             .build(),
         response_time_histogram.clone(),
@@ -370,12 +362,12 @@ impl<C: Clock> TaskProvisioner<C>
         }
     }
 
-    async fn handle_start_round(&self, training_session_id: Option<&[u8]>, task_id_base64: Option<&[u8]>) -> Result<Vec<u8>, Error>
+    async fn handle_start_round(&self, request: StartRoundRequest) -> Result<(), Error>
     {
         //---------------------- decode parameters --------------------------
         // session id
-        let training_session_id = training_session_id.ok_or(anyhow!("training_session_id parameter not given."))?;
-        let training_session_id = TrainingSessionId::get_decoded(&training_session_id)?;
+        // let training_session_id = training_session_id.ok_or(anyhow!("training_session_id parameter not given."))?;
+        let training_session_id = request.training_session_id; // TrainingSessionId::get_decoded(&request.training_session_id)?;
 
         // get training session with this id
         let training_sessions_lock = self.training_sessions.lock().await;
@@ -383,9 +375,9 @@ impl<C: Clock> TaskProvisioner<C>
             .ok_or(anyhow!("There is no training session with id {}", &training_session_id))?;
 
         // task id
-        let task_id_base64 = task_id_base64.ok_or(anyhow!("task_id parameter not given"))?;
+        // let task_id_base64 = task_id_base64.ok_or(anyhow!("task_id parameter not given"))?;
 
-        let task_id_bytes = base64::decode_config(task_id_base64, base64::URL_SAFE_NO_PAD)?;
+        let task_id_bytes = base64::decode_config(request.task_id_encoded, base64::URL_SAFE_NO_PAD)?;
         let task_id = TaskId::get_decoded(&task_id_bytes)?;
 
 
@@ -413,7 +405,7 @@ impl<C: Clock> TaskProvisioner<C>
 
         println!("provisioning task now with id {}", task_id);
         provision_tasks(&self.datastore, vec![task]).await?;
-        Ok(vec![])
+        Ok(())
     }
 
     async fn handle_create_session(&self, request: CreateTrainingSessionRequest) -> Result<TrainingSessionId>

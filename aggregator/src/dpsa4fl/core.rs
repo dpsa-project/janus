@@ -7,7 +7,7 @@
 use std::{fmt::Display, io::Cursor, collections::HashMap};
 
 use janus_core::hpke::{HpkePrivateKey, generate_hpke_config_and_private_key};
-use janus_messages::{HpkeConfigId, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId, Role};
+use janus_messages::{HpkeConfigId, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId, Role, TaskId};
 use prio::codec::{Encode, Decode, CodecError};
 use rand::random;
 use serde::{Serialize, Deserialize};
@@ -121,3 +121,20 @@ pub struct CreateTrainingSessionResponse
     pub training_session_id: TrainingSessionId
 }
 
+
+//--- start training round ---
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StartRoundRequest
+{
+    pub training_session_id: TrainingSessionId,
+    pub task_id_encoded: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StartRoundResponse
+{
+    // pub training_session_id: TrainingSessionId
+}
