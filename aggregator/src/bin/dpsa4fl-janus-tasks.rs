@@ -386,6 +386,15 @@ impl<C: Clock> TaskProvisioner<C>
         // -------------------- create new task -----------------------------
         let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 3600;
 
+        let collector_auth_tokens = if training_session.role == Role::Leader
+        {
+            vec![training_session.collector_auth_token.clone()]
+        }
+        else
+        {
+            Vec::new()
+        };
+
         let task = Task::new(
             task_id,
             vec![training_session.leader_endpoint.clone(), training_session.helper_endpoint.clone()] ,
@@ -400,7 +409,7 @@ impl<C: Clock> TaskProvisioner<C>
             Duration::from_seconds(1000), // tolerable_clock_skew,
             training_session.collector_hpke_config.clone(),
             vec![training_session.leader_auth_token.clone()], // leader auth tokens
-            vec![training_session.collector_auth_token.clone()], // collector auth tokens
+            collector_auth_tokens, // collector auth tokens
             [training_session.hpke_config_and_key.clone()],
         )?;
 
