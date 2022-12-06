@@ -1,41 +1,47 @@
 
+use std::time::UNIX_EPOCH;
+
 use base64::URL_SAFE_NO_PAD;
 use http::StatusCode;
-use janus_core::hpke::{HpkePrivateKey, generate_hpke_config_and_private_key};
-use janus_messages::{Role, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId, TaskId};
-use prio::codec::{Encode, Decode, CodecError};
+use janus_core::{hpke::{HpkePrivateKey, generate_hpke_config_and_private_key}, task::AuthenticationToken};
+use janus_messages::{Role, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId, TaskId, Interval, Time, Duration};
+use janus_collector::{Collector, CollectorParameters, Collection};
+use prio::{codec::{Encode, Decode, CodecError}, vdaf::prio3::{Prio3Aes128CountVec, Prio3Aes128FixedPointBoundedL2VecSum}};
 use anyhow::{anyhow, Context, Result, Error};
 use rand::random;
+use fixed::types::extra::{U15, U31, U63};
+use fixed::{FixedI16, FixedI32, FixedI64};
 use url::Url;
 
 use crate::task::PRIO3_AES128_VERIFY_KEY_LENGTH;
 
-use super::core::{TrainingSessionId, CreateTrainingSessionRequest, CreateTrainingSessionResponse, StartRoundRequest};
+use super::core::{TrainingSessionId, CreateTrainingSessionRequest, CreateTrainingSessionResponse, StartRoundRequest, Locations};
+
+type Fx = FixedI32<U31>;
 
 
 pub struct JanusTasksClient
 {
     http_client: reqwest::Client,
-    external_leader_endpoint: Url,
-    external_helper_endpoint: Url,
-    leader_endpoint: Url,
-    helper_endpoint: Url,
+    location: Locations,
     num_gradient_entries: usize,
     hpke_config: HpkeConfig,
     hpke_private_key: HpkePrivateKey,
+    leader_auth_token: AuthenticationToken,
+    collector_auth_token: AuthenticationToken,
 }
 
 
 impl JanusTasksClient
 {
     pub fn new(
-        external_leader_endpoint: Url,
-        external_helper_endpoint: Url,
-        leader_endpoint: Url,
-        helper_endpoint: Url,
-        num_gradient_entries: usize
+        location: Locations,
+        num_gradient_entries: usize,
     ) -> Self
     {
+        let leader_auth_token = rand::random::<[u8; 16]>().to_vec().into();
+        let collector_auth_token = rand::random::<[u8; 16]>().to_vec().into();
+
         let hpke_id = random::<u8>().into();
         let (hpke_config, hpke_private_key) = generate_hpke_config_and_private_key(
                 hpke_id,
@@ -47,27 +53,26 @@ impl JanusTasksClient
             );
         JanusTasksClient {
             http_client: reqwest::Client::new(),
-            external_leader_endpoint,
-            external_helper_endpoint,
-            leader_endpoint,
-            helper_endpoint,
+            location,
             num_gradient_entries,
             hpke_config,
             hpke_private_key,
+            leader_auth_token,
+            collector_auth_token,
         }
     }
 
     pub async fn create_session(&self) -> Result<TrainingSessionId>
     {
-        let leader_auth_token_encoded = base64::encode_config(rand::random::<[u8; 16]>(), URL_SAFE_NO_PAD);
-        let collector_auth_token_encoded = base64::encode_config(rand::random::<[u8; 16]>(), URL_SAFE_NO_PAD);
+        let leader_auth_token_encoded = base64::encode_config(self.leader_auth_token.as_bytes(), URL_SAFE_NO_PAD);
+        let collector_auth_token_encoded = base64::encode_config(self.collector_auth_token.as_bytes(), URL_SAFE_NO_PAD);
         let verify_key = rand::random::<[u8; PRIO3_AES128_VERIFY_KEY_LENGTH]>();
         let verify_key_encoded = base64::encode_config(&verify_key, URL_SAFE_NO_PAD);
 
         let make_request = |role, id| CreateTrainingSessionRequest {
             training_session_id: id,
-            leader_endpoint: self.leader_endpoint.clone(),
-            helper_endpoint: self.helper_endpoint.clone(),
+            leader_endpoint: self.location.internal_leader.clone(),
+            helper_endpoint: self.location.internal_helper.clone(),
             role,
             num_gradient_entries: self.num_gradient_entries,
             verify_key_encoded: verify_key_encoded.clone(),
@@ -79,7 +84,7 @@ impl JanusTasksClient
         // send request to leader first
         // and get response
         let leader_response = self.http_client
-            .post(self.external_leader_endpoint.join("/create_session").unwrap())
+            .post(self.location.external_leader_tasks.join("/create_session").unwrap())
             .json(&make_request(Role::Leader, None))
             .send()
             .await?;
@@ -97,7 +102,7 @@ impl JanusTasksClient
         };
 
         let helper_response = self.http_client
-            .post(self.external_helper_endpoint.join("/create_session").unwrap())
+            .post(self.location.external_helper_tasks.join("/create_session").unwrap())
             .json(&make_request(Role::Helper, Some(leader_response.training_session_id)))
             .send()
             .await?;
@@ -133,13 +138,13 @@ impl JanusTasksClient
             task_id_encoded,
         };
         let leader_response = self.http_client
-            .post(self.external_leader_endpoint.join("/start_round").unwrap())
+            .post(self.location.external_leader_tasks.join("/start_round").unwrap())
             .json(&request)
             .send()
             .await?;
 
         let helper_response = self.http_client
-            .post(self.external_helper_endpoint.join("/start_round").unwrap())
+            .post(self.location.external_helper_tasks.join("/start_round").unwrap())
             .json(&request)
             .send()
             .await?;
@@ -155,6 +160,32 @@ impl JanusTasksClient
                 Err(anyhow!("Starting round not successful, results are: \n{res1}\n\n{res2}"))
             }
         }
+    }
+
+    /// Collect results
+    pub async fn collect(&self, task_id: TaskId) -> Result<Collection<Vec<f64>>>
+    {
+        let params = CollectorParameters::new(
+            task_id,
+            self.location.external_leader_main.clone(),
+            self.leader_auth_token.clone(),
+            self.hpke_config.clone(),
+            self.hpke_private_key.clone(),
+        );
+
+        let vdaf_collector = Prio3Aes128FixedPointBoundedL2VecSum::<Fx>::new_aes128_fixedpoint_boundedl2_vec_sum(2, self.num_gradient_entries)?;
+
+        let collector_client = Collector::new(params, vdaf_collector, self.http_client.clone());
+
+        let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 7200;
+        let start = Time::from_seconds_since_epoch(0);
+        let duration = Duration::from_seconds(deadline);
+
+        let aggregation_parameter = ();
+
+        let result = collector_client.collect(Interval::new(start, duration)?, &aggregation_parameter).await?;
+
+        Ok(result)
     }
 
 }

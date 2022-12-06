@@ -384,7 +384,7 @@ impl<C: Clock> TaskProvisioner<C>
 
 
         // -------------------- create new task -----------------------------
-        let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 3600;
+        let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 7200;
 
         let collector_auth_tokens = if training_session.role == Role::Leader
         {

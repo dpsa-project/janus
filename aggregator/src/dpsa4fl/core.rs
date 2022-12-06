@@ -13,6 +13,32 @@ use rand::random;
 use serde::{Serialize, Deserialize};
 use url::Url;
 
+/////////////////////////////
+// Locations
+
+#[derive(Clone)]
+pub struct Locations
+{
+    pub internal_leader: Url, // TODO: This internal URL should probably be configured somewhere else, actually
+    pub internal_helper: Url, // TODO: Same.
+    pub external_leader_tasks: Url,
+    pub external_helper_tasks: Url,
+    pub external_leader_main: Url,
+    pub external_helper_main: Url,
+    // controller: Url, // the server that controls the learning process
+}
+
+impl Locations
+{
+    pub fn get_external_aggregator_endpoints(&self) -> Vec<Url>
+    {
+        vec![self.external_leader_main.clone(),self.external_helper_main.clone()]
+    }
+}
+
+/////////////////////////////
+// data
+
 /// DPSA protocol message representing an identifier for a Training Session.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct TrainingSessionId(u16);

@@ -1774,6 +1774,7 @@ dependencies = [
  "hyper",
  "itertools",
  "janus_aggregator",
+ "janus_collector",
  "janus_core",
  "janus_messages",
  "k8s-openapi",
