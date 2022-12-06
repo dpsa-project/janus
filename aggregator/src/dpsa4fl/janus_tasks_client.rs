@@ -168,7 +168,7 @@ impl JanusTasksClient
         let params = CollectorParameters::new(
             task_id,
             self.location.external_leader_main.clone(),
-            self.leader_auth_token.clone(),
+            self.collector_auth_token.clone(),
             self.hpke_config.clone(),
             self.hpke_private_key.clone(),
         );
