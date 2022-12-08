@@ -81,6 +81,7 @@ where
         // Result<reqwest::Response, backoff::Error<Result<reqwest::Response, reqwest::Error>>>>,
         // which allows us to retry on certain HTTP status codes without discarding the
         // reqwest::Response, which the caller may need in order to examine its body or headers.
+        println!("Retrying request now.");
         match request_fn().await {
             Ok(response) => {
                 if response.status().is_server_error()

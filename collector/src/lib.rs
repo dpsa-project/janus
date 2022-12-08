@@ -335,6 +335,7 @@ where
         let response_res = retry_http_request(
             self.parameters.http_request_retry_parameters.clone(),
             || async {
+                println!("inside http request loop.");
                 let mut request = self
                     .http_client
                     .post(url.clone())
@@ -345,7 +346,10 @@ where
                         request = request.header(DAP_AUTH_HEADER, token.as_bytes())
                     }
                 }
-                request.send().await
+                println!(" -> sending request.");
+                let res = request.send().await;
+                println!(" -> got result.");
+                res
             },
         )
         .await;
