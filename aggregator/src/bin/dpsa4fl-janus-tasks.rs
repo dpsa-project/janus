@@ -398,11 +398,12 @@ impl<C: Clock> TaskProvisioner<C>
         let task = Task::new(
             task_id,
             vec![training_session.leader_endpoint.clone(), training_session.helper_endpoint.clone()] ,
-            QueryType::FixedSize { max_batch_size: u64::MAX },
+            QueryType::TimeInterval,
+            // QueryType::FixedSize { max_batch_size: u64::MAX },
             VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries: training_session.num_gradient_entries }),
             training_session.role,
             vec![training_session.verify_key.clone()],
-            1, // max_batch_query_count
+            10, // max_batch_query_count
             Time::from_seconds_since_epoch(deadline), // task_expiration
             2, // min_batch_size
             Duration::from_seconds(TIME_PRECISION), // time_precision
