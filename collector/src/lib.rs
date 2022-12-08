@@ -53,6 +53,7 @@
 //! ```
 
 use backoff::{backoff::Backoff, ExponentialBackoff};
+use base64::URL_SAFE_NO_PAD;
 use derivative::Derivative;
 use http_api_problem::HttpApiProblem;
 use janus_core::{
@@ -336,6 +337,8 @@ where
             self.parameters.http_request_retry_parameters.clone(),
             || async {
                 println!("inside http request loop.");
+                let url = url.clone();
+                println!("url is: {url}");
                 let mut request = self
                     .http_client
                     .post(url.clone())
@@ -344,7 +347,8 @@ where
                 // let req_string = request.to_string();
                 match &self.parameters.authentication {
                     Authentication::DapAuthToken(token) => {
-                        request = request.header(DAP_AUTH_HEADER, token.as_bytes())
+                        let encoded_auth_token = base64::encode_config(token.as_bytes(), URL_SAFE_NO_PAD);
+                        request = request.header(DAP_AUTH_HEADER, encoded_auth_token);
                     }
                 }
                 println!(" -> sending request.");

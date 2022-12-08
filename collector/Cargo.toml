@@ -27,6 +27,7 @@ thiserror = "1.0"
 tokio = { version = "1.21", features = ["full"] }
 tracing = "0.1.37"
 url = "2.3.1"
+base64 = "0.13.0"
 
 [dev-dependencies]
 anyhow = "1"
