@@ -323,12 +323,14 @@ where
         batch_interval: Interval,
         aggregation_parameter: &V::AggregationParam,
     ) -> Result<CollectJob<V::AggregationParam>, Error> {
+        println!("before collect request");
         let collect_request = CollectReq::new(
             self.parameters.task_id,
             Query::new_time_interval(batch_interval),
             aggregation_parameter.get_encoded(),
         );
         let url = self.parameters.collect_endpoint()?;
+        println!("after url");
 
         let response_res = retry_http_request(
             self.parameters.http_request_retry_parameters.clone(),
@@ -347,6 +349,8 @@ where
             },
         )
         .await;
+
+        println!("after response_res");
 
         let response = match response_res {
             // Successful response or unretryable error status code:
@@ -368,12 +372,16 @@ where
             Err(Err(error)) => return Err(Error::HttpClient(error)),
         };
 
+        println!("after response");
+
         let location_header_value = response
             .headers()
             .get(LOCATION)
             .ok_or(Error::MissingLocationHeader)?
             .to_str()?;
         let collect_job_url = location_header_value.parse()?;
+
+        println!("location_header_value");
 
         Ok(CollectJob::new(
             collect_job_url,
