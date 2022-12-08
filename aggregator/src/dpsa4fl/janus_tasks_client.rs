@@ -181,7 +181,7 @@ impl JanusTasksClient
         let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 7200;
         let rounded_deadline = (deadline / TIME_PRECISION) * TIME_PRECISION;
         let start = Time::from_seconds_since_epoch(0);
-        let duration = Duration::from_seconds(deadline);
+        let duration = Duration::from_seconds(rounded_deadline);
 
         let aggregation_parameter = ();
 
