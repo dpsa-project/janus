@@ -18,6 +18,7 @@ use crate::task::PRIO3_AES128_VERIFY_KEY_LENGTH;
 use super::core::{TrainingSessionId, CreateTrainingSessionRequest, CreateTrainingSessionResponse, StartRoundRequest, Locations};
 
 type Fx = FixedI32<U31>;
+const TIME_PRECISION: u64 = 3600;
 
 
 pub struct JanusTasksClient
@@ -178,6 +179,7 @@ impl JanusTasksClient
         let collector_client = Collector::new(params, vdaf_collector, self.http_client.clone());
 
         let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 7200;
+        let rounded_deadline = (deadline / TIME_PRECISION) * TIME_PRECISION;
         let start = Time::from_seconds_since_epoch(0);
         let duration = Duration::from_seconds(deadline);
 
