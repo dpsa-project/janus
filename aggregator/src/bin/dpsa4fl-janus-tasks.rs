@@ -4,7 +4,7 @@ use std::{path::Path, net::SocketAddr, time::{Instant, UNIX_EPOCH}, fmt::Display
 use anyhow::{anyhow, Context, Result, Error};
 use base64::URL_SAFE_NO_PAD;
 use janus_core::{time::{Clock, RealClock}, task::AuthenticationToken, hpke::HpkePrivateKey};
-use janus_aggregator::{datastore::{Datastore, self}, task::{Task, QueryType, VdafInstance}, config::{CommonConfig, BinaryConfig}, binary_utils::{database_pool, datastore, CommonBinaryOptions, BinaryOptions, janus_main, job_driver::JobDriver, setup_signal_handler}, dpsa4fl::core::{TrainingSessionId, HpkeConfigRegistry, CreateTrainingSessionRequest, CreateTrainingSessionResponse, StartRoundRequest, StartRoundResponse}, SecretBytes};
+use janus_aggregator::{datastore::{Datastore, self}, task::{Task, QueryType, VdafInstance}, config::{CommonConfig, BinaryConfig}, binary_utils::{database_pool, datastore, CommonBinaryOptions, BinaryOptions, janus_main, job_driver::JobDriver, setup_signal_handler}, dpsa4fl::{core::{TrainingSessionId, HpkeConfigRegistry, CreateTrainingSessionRequest, CreateTrainingSessionResponse, StartRoundRequest, StartRoundResponse}, janus_tasks_client::TIME_PRECISION}, SecretBytes};
 use http::{
     header::{CACHE_CONTROL, CONTENT_TYPE, LOCATION},
     HeaderMap, StatusCode,
@@ -298,7 +298,6 @@ impl BinaryConfig for Config {
 //////////////////////////////////////////////////
 // self:
 
-const TIME_PRECISION: u64 = 3600;
 
 struct TrainingSession
 {
@@ -384,7 +383,7 @@ impl<C: Clock> TaskProvisioner<C>
 
 
         // -------------------- create new task -----------------------------
-        let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 7200;
+        let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 10*60;
 
         let collector_auth_tokens = if training_session.role == Role::Leader
         {
