@@ -23,7 +23,7 @@ use janus_messages::{
 use opentelemetry::{metrics::Counter, Context, KeyValue};
 use postgres_types::{Json, ToSql};
 use prio::{
-    codec::{decode_u16_items, encode_u16_items, CodecError, Decode, Encode, ParameterizedDecode},
+    codec::{decode_u16_items, encode_u16_items, CodecError, Decode, Encode, ParameterizedDecode, encode_u32_items, decode_u32_items},
     vdaf,
 };
 use rand::random;
@@ -758,7 +758,7 @@ impl<C: Clock> Transaction<'_, C> {
 
                 let encoded_input_shares: Vec<u8> = row.get("input_shares");
                 let input_shares: Vec<HpkeCiphertext> =
-                    decode_u16_items(&(), &mut Cursor::new(&encoded_input_shares))?;
+                    decode_u32_items(&(), &mut Cursor::new(&encoded_input_shares))?;
 
                 Ok(Report::new(
                     *task_id,
@@ -888,7 +888,8 @@ impl<C: Clock> Transaction<'_, C> {
         encode_u16_items(&mut encoded_extensions, &(), report.metadata().extensions());
 
         let mut encoded_input_shares = Vec::new();
-        encode_u16_items(
+        // encode_u16_items(
+        encode_u32_items(
             &mut encoded_input_shares,
             &(),
             report.encrypted_input_shares(),
