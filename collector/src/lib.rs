@@ -341,14 +341,17 @@ where
                     .post(url.clone())
                     .header(CONTENT_TYPE, CollectReq::<TimeInterval>::MEDIA_TYPE)
                     .body(collect_request.get_encoded());
+                // let req_string = request.to_string();
                 match &self.parameters.authentication {
                     Authentication::DapAuthToken(token) => {
                         request = request.header(DAP_AUTH_HEADER, token.as_bytes())
                     }
                 }
                 println!(" -> sending request.");
+                println!("    req: {request:?}");
                 let res = request.send().await;
                 println!(" -> got result.");
+                println!("    res: {res:?}");
                 res
             },
         )
