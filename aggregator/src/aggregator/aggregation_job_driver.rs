@@ -89,6 +89,7 @@ impl AggregationJobDriver {
         lease: Arc<Lease<AcquiredAggregationJob>>,
     ) -> Result<()> {
         // TODO(#468): support both TimeInterval & FixedSize tasks (instead of assuming TimeInterval).
+        println!("Stepping aggregatio job");
         match lease.leased().vdaf() {
             VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Count) => {
                 let vdaf = Arc::new(Prio3::new_aes128_count(2)?);
@@ -116,9 +117,12 @@ impl AggregationJobDriver {
             VdafInstance::Real(
                 janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries },
             ) => {
+                println!(" => started for fixed");
                 let vdaf = Arc::new(Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *entries)?);
-                self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, vdaf, lease)
-                    .await
+                let res = self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, vdaf, lease)
+                    .await;
+                println!(" => ended for fixed");
+                res
             }
 
             _ => panic!("VDAF {:?} is not yet supported", lease.leased().vdaf()),
@@ -229,6 +233,7 @@ impl AggregationJobDriver {
                         .await
                         .map_err(|err| datastore::Error::User(err.into()))?;
 
+                    println!(" => stepping success");
                     Ok((
                         Arc::new(task),
                         aggregation_job,
