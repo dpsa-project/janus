@@ -233,7 +233,9 @@ impl AggregationJobDriver {
                         .await
                         .map_err(|err| datastore::Error::User(err.into()))?;
 
-                    println!(" => stepping success");
+                    let client_reports_size = client_reports.len();
+                    let repaggsize = report_aggregations.len();
+                    println!(" => stepping success (repaggsize: {repaggsize}, clientrep: {client_reports_size})");
                     Ok((
                         Arc::new(task),
                         aggregation_job,
@@ -296,6 +298,7 @@ impl AggregationJobDriver {
         A::PrepareState: PartialEq + Eq + Send + Sync + Encode,
         A::PrepareMessage: PartialEq + Eq + Send + Sync,
     {
+        println!("beginning aggregate job.");
         // Zip the report aggregations at start with the client reports, verifying that their IDs
         // match. We use asserts here as the conditions we are checking should be guaranteed by the
         // caller.
@@ -318,6 +321,8 @@ impl AggregationJobDriver {
             );
         }
 
+
+        println!(" => compute report shares");
         // Compute report shares to send to helper, and decrypt our input shares & initialize
         // preparation state.
         let mut report_aggregations_to_write = Vec::new();
@@ -361,6 +366,8 @@ impl AggregationJobDriver {
                 }
             };
 
+
+            println!(" => decrypt leader input share");
             // Decrypt leader input share & transform into our first transition.
             let (hpke_config, hpke_private_key) = match task
                 .hpke_keys()
@@ -427,6 +434,8 @@ impl AggregationJobDriver {
                 }
             };
 
+
+            println!(" => public share...");
             let public_share = match A::PublicShare::get_decoded_with_param(
                 &vdaf,
                 report.public_share(),
@@ -445,6 +454,7 @@ impl AggregationJobDriver {
                 }
             };
 
+            println!(" => initialize leader prep state");
             // Initialize the leader's preparation state from the input share.
             let (prep_state, prep_share) = match vdaf.prepare_init(
                 verify_key.as_bytes(),
@@ -480,6 +490,7 @@ impl AggregationJobDriver {
             });
         }
 
+        println!(" => construct request");
         // Construct request, send it to the helper, and process the response.
         // TODO(#235): abandon work immediately on "terminal" failures from helper, or other
         // unexepected cases such as unknown/unexpected content type.
@@ -502,6 +513,7 @@ impl AggregationJobDriver {
         .await?;
         let resp = AggregateInitializeResp::get_decoded(&resp_bytes)?;
 
+        println!(" => await helper response");
         self.process_response_from_helper(
             datastore,
             vdaf,
