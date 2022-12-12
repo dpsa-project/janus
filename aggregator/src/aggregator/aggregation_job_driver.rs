@@ -514,7 +514,7 @@ impl AggregationJobDriver {
         let resp = AggregateInitializeResp::get_decoded(&resp_bytes)?;
 
         println!(" => await helper response");
-        self.process_response_from_helper(
+        let res = self.process_response_from_helper(
             datastore,
             vdaf,
             lease,
@@ -524,7 +524,9 @@ impl AggregationJobDriver {
             report_aggregations_to_write,
             resp.prepare_steps(),
         )
-        .await
+        .await;
+        println!(" => got helper response {:?}", res);
+        res
     }
 
     async fn step_aggregation_job_aggregate_continue<
@@ -652,6 +654,8 @@ impl AggregationJobDriver {
         A::PrepareMessage: Send + Sync,
         A::PrepareState: Send + Sync + Encode,
     {
+        let sas = stepped_aggregations.len();
+        println!("processing response from helper, stepped aggregation size {}", sas);
         // Handle response, computing the new report aggregations to be stored.
         if stepped_aggregations.len() != prep_steps.len() {
             return Err(anyhow!(
@@ -675,6 +679,7 @@ impl AggregationJobDriver {
 
             let new_state = match helper_prep_step.result() {
                 PrepareStepResult::Continued(payload) => {
+                    println!("PrepStepResult:Continued");
                     // If the leader continued too, combine the leader's prepare share with the
                     // helper's to compute next round's prepare message. Prepare to store the
                     // leader's new state & the prepare message. If the leader didn't continue,
@@ -692,6 +697,7 @@ impl AggregationJobDriver {
                         });
                         match prep_msg {
                             Ok(prep_msg) => {
+                                println!("successfull prepare message");
                                 ReportAggregationState::Waiting(leader_prep_state, Some(prep_msg))
                             }
                             Err(error) => {
@@ -706,6 +712,7 @@ impl AggregationJobDriver {
                         }
                     } else {
                         warn!(report_id = %report_aggregation.report_id(), "Helper continued but leader did not");
+                        println!("Warning: helper continued, but leader didnt.");
                         self.aggregate_step_failure_counter.add(
                             &Context::current(),
                             1,
@@ -716,6 +723,7 @@ impl AggregationJobDriver {
                 }
 
                 PrepareStepResult::Finished => {
+                    println!("PrepStepResult:Finished");
                     // If the leader finished too, we are done; prepare to store the output share.
                     // If the leader didn't finish too, we transition to INVALID.
                     if let PrepareTransition::Finish(out_share) = leader_transition {
@@ -742,11 +750,13 @@ impl AggregationJobDriver {
                             1,
                             &[KeyValue::new("type", "finish_mismatch")],
                         );
+                        println!("going to invalid.");
                         ReportAggregationState::Invalid
                     }
                 }
 
                 PrepareStepResult::Failed(err) => {
+                    println!("Prepstep:Failed");
                     // If the helper failed, we move to FAILED immediately.
                     // TODO(#236): is it correct to just record the transition error that the helper reports?
                     info!(report_id = %report_aggregation.report_id(), helper_error = ?err, "Helper couldn't step report aggregation");
@@ -768,8 +778,10 @@ impl AggregationJobDriver {
             .iter()
             .all(|ra| !matches!(ra.state(), ReportAggregationState::Waiting(_, _)));
         let aggregation_job_to_write = if aggregation_job_is_finished {
+            println!("Aggregation job finished");
             Some(aggregation_job.with_state(AggregationJobState::Finished))
         } else {
+            println!("Aggregation job not finished");
             None
         };
         let report_aggregations_to_write = Arc::new(report_aggregations_to_write);
