@@ -702,6 +702,7 @@ impl AggregationJobDriver {
                             }
                             Err(error) => {
                                 info!(report_id = %report_aggregation.report_id(), ?error, "Couldn't compute prepare message");
+                                println!("get prep message error: {error}");
                                 self.aggregate_step_failure_counter.add(
                                     &Context::current(),
                                     1,
