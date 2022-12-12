@@ -798,7 +798,10 @@ impl AggregationJobDriver {
                 Box::pin(async move {
                     let report_aggregations_future =
                         try_join_all(report_aggregations_to_write.iter().map(
-                            |report_aggregation| tx.update_report_aggregation(report_aggregation),
+                            |report_aggregation| {
+                                println!("Updating report aggregation with {:?}", report_aggregation);
+                                tx.update_report_aggregation(report_aggregation)
+                            },
                         ));
                     let aggregation_job_future = try_join_all(
                         aggregation_job_to_write
