@@ -1444,6 +1444,7 @@ impl<C: Clock> Transaction<'_, C> {
         for<'a> &'a A::OutputShare: Into<Vec<u8>>,
         for<'a> &'a A::AggregateShare: Into<Vec<u8>>,
     {
+        println!("Putting report aggregation with: {:?}", report_aggregation);
         let encoded_state_values = report_aggregation.state().encoded_values_from_state();
 
         let stmt = self.tx.prepare_cached(
@@ -1485,6 +1486,7 @@ impl<C: Clock> Transaction<'_, C> {
         for<'a> &'a A::OutputShare: Into<Vec<u8>>,
         for<'a> &'a A::AggregateShare: Into<Vec<u8>>,
     {
+        println!("Updating report aggregation with: {:?}", report_aggregation);
         let encoded_state_values = report_aggregation.state().encoded_values_from_state();
 
         let stmt = self
