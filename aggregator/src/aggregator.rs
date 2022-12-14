@@ -420,6 +420,8 @@ impl<C: Clock> Aggregator<C> {
     ) -> Result<Url, Error> {
         // Parse task ID early to avoid parsing the entire message before performing authentication.
         // This assumes that the task ID is at the start of the message content.
+        println!("----------");
+        println!("Begin handling collect request.");
         let task_id = TaskId::decode(&mut Cursor::new(req_bytes))?;
         let task_aggregator = self.task_aggregator_for(&task_id).await?;
         if task_aggregator.task.role() != &Role::Leader {
@@ -435,13 +437,19 @@ impl<C: Clock> Aggregator<C> {
         {
             return Err(Error::UnauthorizedRequest(task_id));
         }
+        println!("accepted request.");
 
         let collect_req = CollectReq::get_decoded(req_bytes)?;
+        println!("decoded request is: {collect_req:?}");
         assert_eq!(collect_req.task_id(), &task_id);
 
-        task_aggregator
+        let res = task_aggregator
             .handle_collect(&self.datastore, collect_req)
-            .await
+            .await;
+
+        println!("res is: {res:?}");
+        println!("-------------------");
+        res
     }
 
     /// Handle a GET request for a collect job. `collect_job_id` is the unique identifier for the
