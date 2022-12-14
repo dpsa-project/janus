@@ -1,5 +1,5 @@
 use crate::{
-    aggregator::{accumulator::Accumulator, aggregate_step_failure_counter, post_to_helper},
+    aggregator::{accumulator::Accumulator, aggregate_step_failure_counter, post_to_helper, invoke_dispatch},
     datastore::{
         self,
         models::{
@@ -80,48 +80,6 @@ impl AggregationJobDriver {
             aggregate_step_failure_counter,
             job_cancel_counter,
             http_request_duration_histogram,
-        }
-    }
-
-    async fn step_aggregation_job<C: Clock>(
-        &self,
-        datastore: Arc<Datastore<C>>,
-        lease: Arc<Lease<AcquiredAggregationJob>>,
-    ) -> Result<()> {
-        // TODO(#468): support both TimeInterval & FixedSize tasks (instead of assuming TimeInterval).
-        match lease.leased().vdaf() {
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Count) => {
-                let vdaf = Arc::new(Prio3::new_aes128_count(2)?);
-                self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128Count>(datastore, vdaf, lease)
-                    .await
-            }
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128CountVec { length }) => {
-                let vdaf = Arc::new(Prio3::new_aes128_count_vec_multithreaded(2, *length)?);
-                self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128CountVecMultithreaded>(datastore, vdaf, lease)
-                    .await
-            }
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Sum { bits }) => {
-                let vdaf = Arc::new(Prio3::new_aes128_sum(2, *bits)?);
-                self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128Sum>(datastore, vdaf, lease)
-                    .await
-            }
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Histogram {
-                ref buckets,
-            }) => {
-                let vdaf = Arc::new(Prio3::new_aes128_histogram(2, buckets)?);
-                self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128Histogram>(datastore, vdaf, lease)
-                    .await
-            }
-
-            VdafInstance::Real(
-                janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries },
-            ) => {
-                let vdaf = Arc::new(Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *entries)?);
-                self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, vdaf, lease)
-                    .await
-            }
-
-            _ => panic!("VDAF {:?} is not yet supported", lease.leased().vdaf()),
         }
     }
 
@@ -791,37 +749,6 @@ impl AggregationJobDriver {
         Ok(())
     }
 
-    async fn cancel_aggregation_job<C: Clock>(
-        &self,
-        datastore: Arc<Datastore<C>>,
-        lease: Lease<AcquiredAggregationJob>,
-    ) -> Result<()> {
-        // TODO(#468): support both TimeInterval & FixedSize tasks (instead of assuming TimeInterval).
-        match lease.leased().vdaf() {
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Count) => {
-                self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128Count>(datastore, lease)
-                    .await
-            }
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128CountVec { .. }) => {
-                self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128CountVecMultithreaded>(datastore, lease)
-                    .await
-            }
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Sum { .. }) => {
-                self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128Sum>(datastore, lease)
-                    .await
-            }
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Histogram { .. }) => {
-                self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128Histogram>(datastore, lease)
-                    .await
-            }
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { .. }) => {
-                self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, lease)
-                    .await
-            }
-
-            _ => panic!("VDAF {:?} is not yet supported", lease.leased().vdaf()),
-        }
-    }
 
     async fn cancel_aggregation_job_generic<
         const L: usize,
@@ -925,6 +852,51 @@ impl AggregationJobDriver {
         }
     }
 }
+
+macro_rules! impl_aggregation_job_driver {
+    ($(($vdaf_instance:pat, $ctor:expr, $vdaf_ops:ident, $prio3:ty),)*) => {
+impl AggregationJobDriver {
+
+    async fn step_aggregation_job<C: Clock>(
+        &self,
+        datastore: Arc<Datastore<C>>,
+        lease: Arc<Lease<AcquiredAggregationJob>>,
+    ) -> Result<()> {
+        // TODO(#468): support both TimeInterval & FixedSize tasks (instead of assuming TimeInterval).
+        match lease.leased().vdaf() {
+            $(
+            VdafInstance::Real($vdaf_instance) => {
+                let vdaf = Arc::new($ctor?);
+                self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, $prio3>(datastore, vdaf, lease)
+                    .await
+            }
+            )*
+            _ => panic!("VDAF {:?} is not yet supported", lease.leased().vdaf()),
+        }
+    }
+    
+    async fn cancel_aggregation_job<C: Clock>(
+        &self,
+        datastore: Arc<Datastore<C>>,
+        lease: Lease<AcquiredAggregationJob>,
+    ) -> Result<()> {
+        // TODO(#468): support both TimeInterval & FixedSize tasks (instead of assuming TimeInterval).
+        match lease.leased().vdaf() {
+            $(
+            VdafInstance::Real($vdaf_instance) => {
+                self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, $prio3>(datastore, lease)
+                    .await
+            }
+            )*
+            _ => panic!("VDAF {:?} is not yet supported", lease.leased().vdaf()),
+        }
+    }
+    
+} // end impl
+    }; // end branch
+} // end macro
+
+invoke_dispatch! { impl_aggregation_job_driver }
 
 /// SteppedAggregation represents a report aggregation along with the associated preparation-state
 /// transition representing the next step for the leader.

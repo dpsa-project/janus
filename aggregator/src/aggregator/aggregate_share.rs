@@ -1,7 +1,7 @@
 //! Implements portions of collect sub-protocol for DAP leader and helper.
 
 use crate::{
-    aggregator::{post_to_helper, Error},
+    aggregator::{post_to_helper, Error, invoke_dispatch},
     datastore::{
         self,
         models::AcquiredCollectJob,
@@ -115,15 +115,8 @@ pub struct CollectJobDriver {
     metrics: CollectJobDriverMetrics,
 }
 
-impl CollectJobDriver {
-    /// Create a new [`CollectJobDriver`].
-    pub fn new(http_client: reqwest::Client, meter: &Meter) -> Self {
-        Self {
-            http_client,
-            metrics: CollectJobDriverMetrics::new(meter),
-        }
-    }
-
+macro_rules! step_collect_match {
+ ($(($vdaf_instance:pat, $f:expr, $vdaf_ops:ident, $prio3:ty),)*) => {
     /// Step the provided collect job, for which a lease should have been acquired (though this
     /// should be idempotent). If the collect job runs to completion, the leader share, helper
     /// share, report count and report ID checksum will be written to the `collect_jobs` table,
@@ -142,45 +135,15 @@ impl CollectJobDriver {
         lease: Arc<Lease<AcquiredCollectJob>>,
     ) -> Result<(), Error> {
         match lease.leased().vdaf() {
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Count) => {
-                self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128Count>(
+            $(
+            VdafInstance::Real($vdaf_instance) => {
+                self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, $prio3>(
                     datastore,
                     lease
                 )
                 .await
             }
-
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128CountVec { .. }) => {
-                self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128CountVecMultithreaded>(
-                    datastore,
-                    lease
-                )
-                .await
-            }
-
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Sum { .. }) => {
-                self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128Sum>(
-                    datastore,
-                    lease
-                )
-                .await
-            }
-
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Histogram { .. }) => {
-                self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128Histogram>(
-                    datastore,
-                    lease,
-                )
-                .await
-            }
-
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { .. }) => {
-                self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(
-                    datastore,
-                    lease,
-                )
-                .await
-            }
+            )*
 
             #[cfg(test)]
             VdafInstance::Fake => {
@@ -196,6 +159,49 @@ impl CollectJobDriver {
     }
 
     #[tracing::instrument(skip(self, datastore), err)]
+    pub async fn abandon_collect_job<C: Clock>(
+        &self,
+        datastore: Arc<Datastore<C>>,
+        lease: Lease<AcquiredCollectJob>,
+    ) -> Result<(), Error> {
+        match lease.leased().vdaf() {
+            $(
+            VdafInstance::Real($vdaf_instance) => {
+                self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, $prio3>(
+                    datastore,
+                    lease
+                )
+                .await
+            }
+            )*
+
+            #[cfg(test)]
+            VdafInstance::Fake => {
+                self.abandon_collect_job_generic::<DUMMY_VERIFY_KEY_LENGTH, C, dummy_vdaf::Vdaf>(
+                    datastore,
+                    lease,
+                )
+                .await
+            }
+
+            _ => panic!("VDAF {:?} is not yet supported", lease.leased().vdaf()),
+        }
+    }
+    };
+}
+ 
+impl CollectJobDriver {
+    /// Create a new [`CollectJobDriver`].
+    pub fn new(http_client: reqwest::Client, meter: &Meter) -> Self {
+        Self {
+            http_client,
+            metrics: CollectJobDriverMetrics::new(meter),
+        }
+    }
+
+    invoke_dispatch! { step_collect_match }
+    
+   #[tracing::instrument(skip(self, datastore), err)]
     async fn step_collect_job_generic<const L: usize, C: Clock, A: vdaf::Aggregator<L>>(
         &self,
         datastore: Arc<Datastore<C>>,
@@ -346,65 +352,6 @@ impl CollectJobDriver {
         Ok(())
     }
 
-    #[tracing::instrument(skip(self, datastore), err)]
-    pub async fn abandon_collect_job<C: Clock>(
-        &self,
-        datastore: Arc<Datastore<C>>,
-        lease: Lease<AcquiredCollectJob>,
-    ) -> Result<(), Error> {
-        match lease.leased().vdaf() {
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Count) => {
-                self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128Count>(
-                    datastore,
-                    lease
-                )
-                .await
-            }
-
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128CountVec { .. }) => {
-                self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128CountVecMultithreaded>(
-                    datastore,
-                    lease
-                )
-                .await
-            }
-
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Sum { .. }) => {
-                self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128Sum>(
-                    datastore,
-                    lease
-                )
-                .await
-            }
-
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Histogram { .. }) => {
-                self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128Histogram>(
-                    datastore,
-                    lease,
-                )
-                .await
-            }
-
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { .. }) => {
-                self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(
-                    datastore,
-                    lease,
-                )
-                .await
-            }
-
-            #[cfg(test)]
-            VdafInstance::Fake => {
-                self.abandon_collect_job_generic::<DUMMY_VERIFY_KEY_LENGTH, C, dummy_vdaf::Vdaf>(
-                    datastore,
-                    lease,
-                )
-                .await
-            }
-
-            _ => panic!("VDAF {:?} is not yet supported", lease.leased().vdaf()),
-        }
-    }
 
     async fn abandon_collect_job_generic<const L: usize, C, A>(
         &self,

@@ -1,4 +1,5 @@
 use crate::{
+    aggregator::invoke_dispatch,
     datastore::models::{
         AggregationJob, AggregationJobState, ReportAggregation, ReportAggregationState,
     },
@@ -69,6 +70,28 @@ pub struct AggregationJobCreator<C: Clock> {
     max_aggregation_job_size: usize,
 }
 
+macro_rules! create_jobs {
+   ($(($vdaf_instance:pat, $f:expr, $vdaf_ops:ident, $prio3:ty),)*) => {
+       
+    #[tracing::instrument(skip(self), err)]
+    async fn create_aggregation_jobs_for_task(&self, task: Arc<Task>) -> anyhow::Result<()> {
+        // TODO(#468): support both TimeInterval & FixedSize tasks (instead of assuming TimeInterval).
+ match task.vdaf() {
+         $(
+            VdafInstance::Real($vdaf_instance) => {
+                    self.create_aggregation_jobs_for_task_no_param::<PRIO3_AES128_VERIFY_KEY_LENGTH, $prio3>(task)
+                        .await
+            }
+          )*
+            _ => {
+                            error!(vdaf = ?task.vdaf(), "VDAF is not yet supported");
+                            panic!("VDAF {:?} is not yet supported", task.vdaf());
+                 }
+                }
+}
+};
+}
+
 impl<C: Clock + 'static> AggregationJobCreator<C> {
     pub fn new(
         datastore: Datastore<C>,
@@ -87,6 +110,8 @@ impl<C: Clock + 'static> AggregationJobCreator<C> {
             max_aggregation_job_size,
         }
     }
+
+    invoke_dispatch! { create_jobs }
 
     #[tracing::instrument(skip(self))]
     pub async fn run(self: Arc<Self>) -> Infallible {
@@ -211,44 +236,6 @@ impl<C: Clock + 'static> AggregationJobCreator<C> {
                     debug!(task_id = %task.id(), "Job creation worker stopped");
                     return;
                 }
-            }
-        }
-    }
-
-    #[tracing::instrument(skip(self), err)]
-    async fn create_aggregation_jobs_for_task(&self, task: Arc<Task>) -> anyhow::Result<()> {
-        // TODO(#468): support both TimeInterval & FixedSize tasks (instead of assuming TimeInterval).
-        match task.vdaf() {
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Count) => {
-                self.create_aggregation_jobs_for_task_no_param::<PRIO3_AES128_VERIFY_KEY_LENGTH, Prio3Aes128Count>(task)
-                    .await
-            }
-
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128CountVec { .. }) => {
-                self.create_aggregation_jobs_for_task_no_param::<
-                    PRIO3_AES128_VERIFY_KEY_LENGTH,
-                    Prio3Aes128CountVecMultithreaded
-                >(task).await
-            }
-
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Sum { .. }) => {
-                self.create_aggregation_jobs_for_task_no_param::<PRIO3_AES128_VERIFY_KEY_LENGTH, Prio3Aes128Sum>(task)
-                    .await
-            }
-
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Histogram { .. }) => {
-                self.create_aggregation_jobs_for_task_no_param::<PRIO3_AES128_VERIFY_KEY_LENGTH, Prio3Aes128Histogram>(task)
-                    .await
-            }
-
-            VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { .. }) => {
-                self.create_aggregation_jobs_for_task_no_param::<PRIO3_AES128_VERIFY_KEY_LENGTH, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(task)
-                    .await
-            }
-
-            _ => {
-                error!(vdaf = ?task.vdaf(), "VDAF is not yet supported");
-                panic!("VDAF {:?} is not yet supported", task.vdaf());
             }
         }
     }
