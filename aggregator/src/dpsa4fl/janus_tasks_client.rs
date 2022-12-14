@@ -176,7 +176,33 @@ impl JanusTasksClient
 
         let vdaf_collector = Prio3Aes128FixedPointBoundedL2VecSum::<Fx>::new_aes128_fixedpoint_boundedl2_vec_sum(2, self.num_gradient_entries)?;
 
-        let collector_client = Collector::new(params, vdaf_collector, self.http_client.clone());
+
+        // we need to redirect urls returned by janus because janus gives us its
+        // internal domain, but we need the external one.
+        // let custom = redirect::Policy::custom(|attempt| {
+            // if attempt.url().host_str() == Some(self.location.internal_leader)
+            // {
+            //     attempt.url().
+            // }
+            // else
+            // {
+            //     attempt.follow()
+            // }
+            // if attempt.previous().len() > 5 {
+            //     attempt.error("too many redirects")
+            // } else if attempt.url().host_str() == Some("example.domain") {
+            //     // prevent redirects to 'example.domain'
+            //     attempt.stop()
+            // } else {
+            //     attempt.follow()
+            // }
+        // });
+
+        let collector_http_client = reqwest::Client::builder()
+            // .redirect(custom)
+            .build()?;
+
+        let collector_client = Collector::new(params, vdaf_collector, collector_http_client);
 
         let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 60*5;
         let rounded_deadline = (deadline / TIME_PRECISION) * TIME_PRECISION;
@@ -185,7 +211,12 @@ impl JanusTasksClient
 
         let aggregation_parameter = ();
 
-        let result = collector_client.collect(Interval::new(start, duration)?, &aggregation_parameter).await?;
+        let host = self.location.external_leader_main.host().ok_or(anyhow!("Couldnt get hostname"))?;
+        let port = self.location.external_leader_main.port().ok_or(anyhow!("Couldnt get port"))?;
+
+        println!("patched host and port are: {host} -:- {port}");
+
+        let result = collector_client.collect_with_rewritten_url(Interval::new(start, duration)?, &aggregation_parameter, &host.to_string(), port).await?;
 
         Ok(result)
     }
