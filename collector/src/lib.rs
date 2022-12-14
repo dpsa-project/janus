@@ -319,6 +319,130 @@ where
 
     /// Send a collect request to the leader aggregator.
     #[tracing::instrument(err)]
+    async fn start_collection_with_rewritten_redirect(
+        &self,
+        batch_interval: Interval,
+        aggregation_parameter: &V::AggregationParam,
+        hostname: &str,
+        port: u16,
+    ) -> Result<CollectJob<V::AggregationParam>, Error> {
+        println!("before collect request");
+        let collect_request = CollectReq::new(
+            self.parameters.task_id,
+            Query::new_time_interval(batch_interval),
+            aggregation_parameter.get_encoded(),
+        );
+        let url = self.parameters.collect_endpoint()?;
+        println!("after url");
+
+        let response_res = retry_http_request(
+            self.parameters.http_request_retry_parameters.clone(),
+            || async {
+                println!("inside http request loop.");
+                let url = url.clone();
+                println!("url is: {url}");
+                let mut request = self
+                    .http_client
+                    .post(url.clone())
+                    .header(CONTENT_TYPE, CollectReq::<TimeInterval>::MEDIA_TYPE)
+                    .body(collect_request.get_encoded());
+                // let req_string = request.to_string();
+                match &self.parameters.authentication {
+                    Authentication::DapAuthToken(token) => {
+                        let encoded_auth_token = base64::encode_config(token.as_bytes(), URL_SAFE_NO_PAD);
+                        request = request.header(DAP_AUTH_HEADER, encoded_auth_token);
+                    }
+                }
+                println!(" -> sending request.");
+                println!("    req: {request:?}");
+
+                let res = request.send().await;
+
+                // check if request errors with ConnectError
+                let res = match res
+                {
+                    Ok(x) => Ok(x),
+                    Err(err) =>
+                    {
+                        let mut url = err.url().unwrap().clone();
+                        println!("have reqwest url in error, try again with rewritten.");
+                        url.set_host(Some(hostname)).unwrap();
+                        url.set_port(Some(port)).unwrap();
+                        println!("new url is: {url}");
+
+                        // send request again
+                        let mut request = self
+                            .http_client
+                            .post(url.clone())
+                            .header(CONTENT_TYPE, CollectReq::<TimeInterval>::MEDIA_TYPE)
+                            .body(collect_request.get_encoded());
+                        // let req_string = request.to_string();
+                        match &self.parameters.authentication {
+                            Authentication::DapAuthToken(token) => {
+                                let encoded_auth_token = base64::encode_config(token.as_bytes(), URL_SAFE_NO_PAD);
+                                request = request.header(DAP_AUTH_HEADER, encoded_auth_token);
+                            }
+                        }
+                        println!(" -> sending request.");
+                        println!("    req: {request:?}");
+
+                        let res = request.send().await;
+                        res
+                    }
+                };
+
+
+                println!(" -> got result.");
+                println!("    res: {res:?}");
+                res
+            },
+        )
+        .await;
+
+        println!("after response_res");
+
+        let response = match response_res {
+            // Successful response or unretryable error status code:
+            Ok(response) => {
+                let status = response.status();
+                if status == StatusCode::SEE_OTHER {
+                    response
+                } else if status.is_client_error() || status.is_server_error() {
+                    return Err(Error::Http(response_to_problem_details(response).await));
+                } else {
+                    return Err(Error::Http(HttpApiProblem::new(status)));
+                }
+            }
+            // Retryable error status code, but ran out of retries:
+            Err(Ok(response)) => {
+                return Err(Error::Http(response_to_problem_details(response).await))
+            }
+            // Lower level errors, either unretryable or ran out of retries:
+            Err(Err(error)) => return Err(Error::HttpClient(error)),
+        };
+
+        println!("after response");
+
+        let location_header_value = response
+            .headers()
+            .get(LOCATION)
+            .ok_or(Error::MissingLocationHeader)?
+            .to_str()?;
+        let collect_job_url = location_header_value.parse()?;
+
+        println!("location_header_value");
+
+        Ok(CollectJob::new(
+            collect_job_url,
+            batch_interval,
+            aggregation_parameter.clone(),
+        ))
+    }
+
+
+
+    /// Send a collect request to the leader aggregator.
+    #[tracing::instrument(err)]
     async fn start_collection(
         &self,
         batch_interval: Interval,
@@ -353,6 +477,7 @@ where
                 }
                 println!(" -> sending request.");
                 println!("    req: {request:?}");
+
                 let res = request.send().await;
                 println!(" -> got result.");
                 println!("    res: {res:?}");
@@ -583,7 +708,7 @@ where
         for<'a> Vec<u8>: From<&'a <V as vdaf::Vdaf>::AggregateShare>,
     {
         let mut job = self
-            .start_collection(batch_interval, aggregation_parameter)
+            .start_collection_with_rewritten_redirect(batch_interval, aggregation_parameter, host, port)
             .await?;
         job.collect_job_url.set_host(Some(host))?;
         job.collect_job_url.set_port(Some(port)).unwrap();
@@ -608,7 +733,7 @@ pub mod test_util {
         for<'a> Vec<u8>: From<&'a <V as vdaf::Vdaf>::AggregateShare>,
     {
         let mut job = collector
-            .start_collection(batch_interval, aggregation_parameter)
+            .start_collection_with_rewritten_redirect(batch_interval, aggregation_parameter, host, port)
             .await?;
         job.collect_job_url.set_host(Some(host))?;
         job.collect_job_url.set_port(Some(port)).unwrap();
