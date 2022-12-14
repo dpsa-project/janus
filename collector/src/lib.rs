@@ -373,7 +373,7 @@ where
                         // send request again
                         let mut request = self
                             .http_client
-                            .post(url.clone())
+                            .get(url.clone()) // BUT THIS TIME IT IS A "GET" REQUEST
                             .header(CONTENT_TYPE, CollectReq::<TimeInterval>::MEDIA_TYPE)
                             .body(collect_request.get_encoded());
                         // let req_string = request.to_string();
