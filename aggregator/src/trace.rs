@@ -139,8 +139,8 @@ pub fn install_trace_subscriber(config: &TraceConfiguration) -> Result<(), Error
     layers.push(
         base_layer()
             .pretty()
-            .with_current_span(false)
-            .with_filter(stdout_filter)
+            // .with_current_span(false)
+            .with_filter(EnvFilter::from_default_env())
             .boxed()
     );
 
