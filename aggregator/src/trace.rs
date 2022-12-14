@@ -136,6 +136,14 @@ pub fn install_trace_subscriber(config: &TraceConfiguration) -> Result<(), Error
         ),
     }
 
+    layers.push(
+        base_layer()
+            .pretty()
+            .with_current_span(false)
+            .with_filter(stdout_filter)
+            .boxed()
+    );
+
     #[cfg(feature = "tokio-console")]
     if config.tokio_console_config.enabled {
         let console_filter = tracing_subscriber::filter::Targets::new()
