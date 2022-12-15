@@ -506,7 +506,9 @@ where
                 let mut request = self.http_client.get(job.collect_job_url.clone());
                 match &self.parameters.authentication {
                     Authentication::DapAuthToken(token) => {
-                        request = request.header(DAP_AUTH_HEADER, token.as_bytes())
+                        let encoded_auth_token = base64::encode_config(token.as_bytes(), URL_SAFE_NO_PAD);
+                        request = request.header(DAP_AUTH_HEADER, encoded_auth_token);
+                        // request = request.header(DAP_AUTH_HEADER, token.as_bytes())
                     }
                 }
                 request.send().await
