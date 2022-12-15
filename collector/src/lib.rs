@@ -533,6 +533,7 @@ where
         &self,
         job: &CollectJob<V::AggregationParam>,
     ) -> Result<PollResult<V::AggregateResult>, Error> {
+        println!("inside poll_once");
         let response_res = retry_http_request(
             self.parameters.http_request_retry_parameters.clone(),
             || async {
@@ -547,18 +548,23 @@ where
         )
         .await;
 
+        println!(" => after retry_http_request.");
+
         let response = match response_res {
             // Successful response or unretryable error status code:
             Ok(response) => {
                 let status = response.status();
+                println!("got response, status is: {status}");
                 match status {
                     StatusCode::OK => response,
                     StatusCode::ACCEPTED => {
+                        println!("inside accepted branch");
                         let retry_after_opt = response
                             .headers()
                             .get(RETRY_AFTER)
                             .map(RetryAfter::try_from)
                             .transpose()?;
+                        println!("retrying in {retry_after_opt:?}");
                         return Ok(PollResult::NextAttempt(retry_after_opt));
                     }
                     _ if status.is_client_error() || status.is_server_error() => {
@@ -569,6 +575,7 @@ where
             }
             // Retryable error status code, but ran out of retries:
             Err(Ok(response)) => {
+                println!(" => too many retries.");
                 return Err(Error::Http(response_to_problem_details(response).await))
             }
             // Lower level errors, either unretryable or ran out of retries:
@@ -641,12 +648,15 @@ where
             .max_elapsed_time
             .map(|duration| Instant::now() + duration);
         loop {
+            println!("inside poll loop!");
             // poll_once() already retries upon server and connection errors, so propagate any error
             // received from it and return immediately.
             let retry_after = match self.poll_once(job).await? {
                 PollResult::CollectionResult(aggregate_result) => return Ok(aggregate_result),
                 PollResult::NextAttempt(retry_after) => retry_after,
             };
+
+            println!(" => after poll_once!");
 
             // Compute a sleep duration based on the Retry-After header, if available.
             let retry_after_duration = match retry_after {
