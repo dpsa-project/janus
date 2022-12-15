@@ -710,9 +710,13 @@ where
         let mut job = self
             .start_collection_with_rewritten_redirect(batch_interval, aggregation_parameter, host, port)
             .await?;
+        println!("Got job after start collection {job:?}");
         job.collect_job_url.set_host(Some(host))?;
         job.collect_job_url.set_port(Some(port)).unwrap();
-        self.poll_until_complete(&job).await
+        println!("Patched job is: {job:?}");
+        let res = self.poll_until_complete(&job).await;
+        println!("Result of polling is: {res:?}");
+        res
     }
 }
 
