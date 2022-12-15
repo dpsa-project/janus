@@ -199,7 +199,7 @@ impl JanusTasksClient
         // });
 
         let collector_http_client = reqwest::Client::builder()
-            // .redirect(custom)
+            .redirect(reqwest::redirect::Policy::none())
             .build()?;
 
         let collector_client = Collector::new(params, vdaf_collector, collector_http_client);
@@ -216,7 +216,9 @@ impl JanusTasksClient
 
         println!("patched host and port are: {host} -:- {port}");
 
-        let result = collector_client.collect_with_rewritten_url(Interval::new(start, duration)?, &aggregation_parameter, &host.to_string(), port).await?;
+        // let result = collector_client.collect_with_rewritten_url(Interval::new(start, duration)?, &aggregation_parameter, &host.to_string(), port).await?;
+
+        let result = collector_client.collect(Interval::new(start, duration)?, &aggregation_parameter).await?;
 
         Ok(result)
     }
