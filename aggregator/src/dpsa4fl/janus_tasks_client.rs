@@ -216,6 +216,8 @@ impl JanusTasksClient
 
         println!("patched host and port are: {host} -:- {port}");
 
+        println!("collecting result now");
+
         let result = collector_client.collect_with_rewritten_url(Interval::new(start, duration)?, &aggregation_parameter, &host.to_string(), port).await?;
 
         // let result = collector_client.collect(Interval::new(start, duration)?, &aggregation_parameter).await?;
