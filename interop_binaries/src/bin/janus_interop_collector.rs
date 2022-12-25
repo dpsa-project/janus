@@ -5,6 +5,8 @@ use base64::{
     engine::fast_portable::{FastPortable, NO_PAD},
 };
 use clap::{value_parser, Arg, Command};
+use fixed::types::extra::U31;
+use fixed::FixedI32;
 use janus_collector::{Collector, CollectorParameters};
 use janus_core::{
     hpke::HpkeKeypair,
@@ -35,6 +37,7 @@ use std::{
 use tokio::{spawn, sync::Mutex, task::JoinHandle};
 use warp::{hyper::StatusCode, reply::Response, Filter, Reply};
 
+use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 #[derive(Debug, Deserialize)]
 struct AddTaskRequest {
     task_id: String,
@@ -96,6 +99,7 @@ struct CollectResult {
 enum AggregationResult {
     Number(NumberAsString<u128>),
     NumberVec(Vec<NumberAsString<u128>>),
+    FloatVec(Vec<NumberAsString<f64>>),
 }
 
 #[derive(Debug, Serialize)]
@@ -352,6 +356,28 @@ async fn handle_collect_start(
             .await?
         }
 
+        (
+            ParsedQuery::TimeInterval(batch_interval),
+            janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries },
+        ) => {
+            let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
+                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, entries)
+                    .context("failed to construct Prio3Aes128FixedPointBoundedL2VecSum VDAF")?;
+            handle_collect_generic(
+                http_client,
+                collector_params,
+                Query::new_time_interval(batch_interval),
+                vdaf,
+                &agg_param,
+                |_| None,
+                |result| {
+                    let converted = result.iter().cloned().map(NumberAsString).collect();
+                    AggregationResult::FloatVec(converted)
+                },
+            )
+            .await?
+        }
+
         (ParsedQuery::FixedSize(fixed_size_query), VdafInstance::Prio3Aes128Count {}) => {
             let vdaf =
                 Prio3::new_aes128_count(2).context("failed to construct Prio3Aes128Count VDAF")?;
@@ -383,6 +409,28 @@ async fn handle_collect_start(
                 |result| {
                     let converted = result.iter().cloned().map(NumberAsString).collect();
                     AggregationResult::NumberVec(converted)
+                },
+            )
+            .await?
+        }
+
+        (
+            ParsedQuery::FixedSize(fixed_size_query),
+            janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries },
+        ) => {
+            let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
+                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, entries)
+                    .context("failed to construct Prio3Aes128FixedPointBoundedL2VecSum VDAF")?;
+            handle_collect_generic(
+                http_client,
+                collector_params,
+                Query::new_fixed_size(fixed_size_query),
+                vdaf,
+                &agg_param,
+                |selector| Some(*selector.batch_id()),
+                |result| {
+                    let converted = result.iter().cloned().map(NumberAsString).collect();
+                    AggregationResult::FloatVec(converted)
                 },
             )
             .await?

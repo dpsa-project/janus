@@ -25,6 +25,9 @@ pub enum VdafInstance {
     Prio3Aes128Sum { bits: u32 },
     /// A `prio3` histogram using the AES 128 pseudorandom generator.
     Prio3Aes128Histogram { buckets: Vec<u64> },
+    /// A `prio3` fixedpoint vector sum with bounded L2 norm using the AES 128
+    /// pseudorandom generator.
+    Prio3Aes128FixedPointBoundedL2VecSum { entries: usize },
     /// The `poplar1` VDAF. Support for this VDAF is experimental.
     Poplar1 { bits: usize },
 

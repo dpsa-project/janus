@@ -27,6 +27,8 @@ backoff = { version = "0.4", features = ["tokio"] }
 base64 = "0.20.0"
 clap = "4.0.27"
 futures = { version = "0.3.25", optional = true }
+fixed = "1.19"
+fixed-macro = "1.1.1"
 hex = { version = "0.4", optional = true }
 lazy_static = { version = "1", optional = true }
 janus_aggregator.workspace = true

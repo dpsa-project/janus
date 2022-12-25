@@ -25,6 +25,8 @@ use serde_json::{json, Value};
 use std::time::Duration as StdDuration;
 use testcontainers::RunnableImage;
 
+use fixed_macro::fixed;
+
 const JSON_MEDIA_TYPE: &str = "application/json";
 const TIME_PRECISION: u64 = 3600;
 
@@ -228,6 +230,7 @@ async fn run(
         .send()
         .await
         .unwrap();
+
     assert_eq!(collector_add_task_response.status(), StatusCode::OK);
     assert_eq!(
         collector_add_task_response
@@ -654,6 +657,42 @@ async fn e2e_prio3_count_vec() {
     {
         assert!(element.is_string());
     }
+}
+
+#[tokio::test]
+async fn e2e_prio3_fixedvec() {
+    let fp32_4_inv = fixed!(0.25: I1F31);
+    let fp32_8_inv = fixed!(0.125: I1F31);
+    let fp32_16_inv = fixed!(0.0625: I1F31);
+    let result = run(
+        QueryKind::TimeInterval,
+        json!({"type": "Prio3Aes128FixedPointBoundedL2VecSum", "entries": "3"}),
+        &[
+            json!([
+                fp32_4_inv.to_string(),
+                fp32_8_inv.to_string(),
+                fp32_8_inv.to_string()
+            ]),
+            json!([
+                fp32_16_inv.to_string(),
+                fp32_8_inv.to_string(),
+                fp32_16_inv.to_string()
+            ]),
+            json!([
+                fp32_8_inv.to_string(),
+                fp32_8_inv.to_string(),
+                fp32_4_inv.to_string()
+            ]),
+            json!([
+                fp32_16_inv.to_string(),
+                fp32_8_inv.to_string(),
+                fp32_4_inv.to_string()
+            ]),
+        ],
+        b"",
+    )
+    .await;
+    assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
 }
 
 #[tokio::test]

@@ -4,6 +4,8 @@ use base64::{
     engine::fast_portable::{FastPortable, NO_PAD},
 };
 use clap::{value_parser, Arg, Command};
+use fixed::types::extra::U31;
+use fixed::FixedI32;
 use janus_client::ClientParameters;
 use janus_core::{
     task::VdafInstance,
@@ -15,6 +17,7 @@ use janus_interop_binaries::{
     NumberAsString, VdafObject,
 };
 use janus_messages::{Duration, Role, TaskId, Time};
+use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 use prio::{
     codec::Decode,
     vdaf::{prio3::Prio3, Vdaf},
@@ -29,6 +32,7 @@ use warp::{hyper::StatusCode, reply::Response, Filter, Reply};
 enum Measurement {
     Number(NumberAsString<u128>),
     NumberVec(Vec<NumberAsString<u128>>),
+    FixedVec(Vec<NumberAsString<FixedI32<U31>>>),
 }
 
 impl Measurement {
@@ -51,6 +55,15 @@ impl Measurement {
                 .collect::<anyhow::Result<Vec<_>>>(),
             m => Err(anyhow!(
                 "cannot represent measurement {m:?} as a vector of primitives"
+            )),
+        }
+    }
+
+    fn as_fixed_vec(&self) -> anyhow::Result<Vec<FixedI32<U31>>> {
+        match self {
+            Measurement::FixedVec(vec) => Ok(vec.iter().map(|item| item.0).collect()),
+            m => Err(anyhow!(
+                "cannot represent measurement {m:?} as a vector of fixed point numbers"
             )),
         }
     }
@@ -177,7 +190,13 @@ async fn handle_upload(
                 .context("failed to construct Prio3Aes128Histogram VDAF")?;
             handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
         }
-
+        VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries } => {
+            let measurement = request.measurement.as_fixed_vec()?;
+            let vdaf_client: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
+                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, entries)
+                    .context("failed to construct Prio3Aes128CountVec VDAF")?;
+            handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
+        }
         _ => panic!("Unsupported VDAF: {:?}", vdaf_instance),
     }
     Ok(())
