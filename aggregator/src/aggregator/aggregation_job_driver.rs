@@ -112,7 +112,7 @@ impl AggregationJobDriver {
 
             (
                 task::QueryType::TimeInterval,
-                VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries },
+                VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { entries },
             ) => {
                 let vdaf = Arc::new(Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *entries)?);
                 self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, vdaf, lease)
@@ -145,7 +145,7 @@ impl AggregationJobDriver {
 
             (
                 task::QueryType::FixedSize { .. },
-                VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries },
+                VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { entries },
             ) => {
                 let vdaf = Arc::new(Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *entries)?);
                 self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, vdaf, lease)
@@ -760,7 +760,7 @@ impl AggregationJobDriver {
                     .await
             }
 
-            (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { .. }) => {
+            (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { .. }) => {
                 self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, lease)
                     .await
             }
@@ -785,7 +785,7 @@ impl AggregationJobDriver {
                     .await
             }
 
-            (task::QueryType::FixedSize { .. }, VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { .. }) => {
+            (task::QueryType::FixedSize { .. }, VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { .. }) => {
                 self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, lease)
                     .await
             }

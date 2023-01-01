@@ -190,7 +190,7 @@ async fn handle_upload(
                 .context("failed to construct Prio3Aes128Histogram VDAF")?;
             handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
         }
-        VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries } => {
+        VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { entries } => {
             let measurement = request.measurement.as_fixed_vec()?;
             let vdaf_client: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
                 Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, entries)

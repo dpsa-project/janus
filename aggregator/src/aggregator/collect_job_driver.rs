@@ -108,7 +108,7 @@ impl CollectJobDriver {
                 .await
             }
 
-            (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { .. }) => {
+            (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { .. }) => {
                 self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(
                     datastore,
                     lease,
@@ -157,7 +157,7 @@ impl CollectJobDriver {
                 .await
             }
 
-            (task::QueryType::FixedSize{..}, VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { .. }) => {
+            (task::QueryType::FixedSize{..}, VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { .. }) => {
                 self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(
                     datastore,
                     lease,
@@ -375,7 +375,7 @@ impl CollectJobDriver {
             }
 
 
-            (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum{..}) => {
+            (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum{..}) => {
                 self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(
                     datastore,
                     lease,
@@ -424,7 +424,7 @@ impl CollectJobDriver {
                 .await
             }
 
-            (task::QueryType::FixedSize{..}, VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum{..}) => {
+            (task::QueryType::FixedSize{..}, VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum{..}) => {
                 self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(
                     datastore,
                     lease,

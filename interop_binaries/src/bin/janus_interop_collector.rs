@@ -358,11 +358,11 @@ async fn handle_collect_start(
 
         (
             ParsedQuery::TimeInterval(batch_interval),
-            janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries },
+            janus_core::task::VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { entries },
         ) => {
             let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
                 Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, entries)
-                    .context("failed to construct Prio3Aes128FixedPointBoundedL2VecSum VDAF")?;
+                    .context("failed to construct Prio3Aes128FixedPoint32BitBoundedL2VecSum VDAF")?;
             handle_collect_generic(
                 http_client,
                 collector_params,
@@ -416,11 +416,11 @@ async fn handle_collect_start(
 
         (
             ParsedQuery::FixedSize(fixed_size_query),
-            janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries },
+            janus_core::task::VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { entries },
         ) => {
             let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
                 Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, entries)
-                    .context("failed to construct Prio3Aes128FixedPointBoundedL2VecSum VDAF")?;
+                    .context("failed to construct Prio3Aes128FixedPoint32BitBoundedL2VecSum VDAF")?;
             handle_collect_generic(
                 http_client,
                 collector_params,

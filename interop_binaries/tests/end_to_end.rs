@@ -666,7 +666,44 @@ async fn e2e_prio3_fixedvec() {
     let fp32_16_inv = fixed!(0.0625: I1F31);
     let result = run(
         QueryKind::TimeInterval,
-        json!({"type": "Prio3Aes128FixedPointBoundedL2VecSum", "entries": "3"}),
+        json!({"type": "Prio3Aes128FixedPoint32BitBoundedL2VecSum", "entries": "3"}),
+        &[
+            json!([
+                fp32_4_inv.to_string(),
+                fp32_8_inv.to_string(),
+                fp32_8_inv.to_string()
+            ]),
+            json!([
+                fp32_16_inv.to_string(),
+                fp32_8_inv.to_string(),
+                fp32_16_inv.to_string()
+            ]),
+            json!([
+                fp32_8_inv.to_string(),
+                fp32_8_inv.to_string(),
+                fp32_4_inv.to_string()
+            ]),
+            json!([
+                fp32_16_inv.to_string(),
+                fp32_8_inv.to_string(),
+                fp32_4_inv.to_string()
+            ]),
+        ],
+        b"",
+    )
+    .await;
+    assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
+}
+
+
+#[tokio::test]
+async fn e2e_prio3_fixedvec_fixedsize() {
+    let fp32_4_inv = fixed!(0.25: I1F31);
+    let fp32_8_inv = fixed!(0.125: I1F31);
+    let fp32_16_inv = fixed!(0.0625: I1F31);
+    let result = run(
+        QueryKind::FixedSize,
+        json!({"type": "Prio3Aes128FixedPoint32BitBoundedL2VecSum", "entries": "3"}),
         &[
             json!([
                 fp32_4_inv.to_string(),
