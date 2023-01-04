@@ -13,8 +13,8 @@ use crate::{
     try_join,
 };
 use derivative::Derivative;
-use fixed::types::extra::U31;
-use fixed::FixedI32;
+use fixed::types::extra::{U15, U31, U63};
+use fixed::{FixedI16, FixedI32, FixedI64};
 use futures::future::BoxFuture;
 #[cfg(feature = "test-util")]
 use janus_core::test_util::dummy_vdaf;
@@ -108,8 +108,24 @@ impl CollectJobDriver {
                 .await
             }
 
+            (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { .. }) => {
+                self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>>>(
+                    datastore,
+                    lease,
+                )
+                .await
+            }
+
             (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { .. }) => {
                 self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(
+                    datastore,
+                    lease,
+                )
+                .await
+            }
+
+            (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { .. }) => {
+                self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>>>(
                     datastore,
                     lease,
                 )
@@ -157,8 +173,24 @@ impl CollectJobDriver {
                 .await
             }
 
+            (task::QueryType::FixedSize{..}, VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { .. }) => {
+                self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>>>(
+                    datastore,
+                    lease,
+                )
+                .await
+            }
+
             (task::QueryType::FixedSize{..}, VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { .. }) => {
                 self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(
+                    datastore,
+                    lease,
+                )
+                .await
+            }
+
+            (task::QueryType::FixedSize{..}, VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { .. }) => {
+                self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>>>(
                     datastore,
                     lease,
                 )
@@ -374,9 +406,24 @@ impl CollectJobDriver {
                 .await
             }
 
+            (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum{..}) => {
+                self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>>>(
+                    datastore,
+                    lease,
+                )
+                .await
+            }
 
             (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum{..}) => {
                 self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(
+                    datastore,
+                    lease,
+                )
+                .await
+            }
+
+            (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum{..}) => {
+                self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>>>(
                     datastore,
                     lease,
                 )
@@ -424,8 +471,24 @@ impl CollectJobDriver {
                 .await
             }
 
+            (task::QueryType::FixedSize{..}, VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum{..}) => {
+                self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>>>(
+                    datastore,
+                    lease,
+                )
+                .await
+            }
+
             (task::QueryType::FixedSize{..}, VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum{..}) => {
                 self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(
+                    datastore,
+                    lease,
+                )
+                .await
+            }
+
+            (task::QueryType::FixedSize{..}, VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum{..}) => {
+                self.abandon_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>>>(
                     datastore,
                     lease,
                 )

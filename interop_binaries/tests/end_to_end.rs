@@ -660,7 +660,7 @@ async fn e2e_prio3_count_vec() {
 }
 
 #[tokio::test]
-async fn e2e_prio3_fixedvec() {
+async fn e2e_prio3_fixed32vec() {
     let fp32_4_inv = fixed!(0.25: I1F31);
     let fp32_8_inv = fixed!(0.125: I1F31);
     let fp32_16_inv = fixed!(0.0625: I1F31);
@@ -695,6 +695,77 @@ async fn e2e_prio3_fixedvec() {
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
 }
 
+#[tokio::test]
+async fn e2e_prio3_fixed16vec() {
+    let fp16_4_inv = fixed!(0.25: I1F15);
+    let fp16_8_inv = fixed!(0.125: I1F15);
+    let fp16_16_inv = fixed!(0.0625: I1F15);
+    let result = run(
+        QueryKind::TimeInterval,
+        json!({"type": "Prio3Aes128FixedPoint16BitBoundedL2VecSum", "entries": "3"}),
+        &[
+            json!([
+                fp16_4_inv.to_string(),
+                fp16_8_inv.to_string(),
+                fp16_8_inv.to_string()
+            ]),
+            json!([
+                fp16_16_inv.to_string(),
+                fp16_8_inv.to_string(),
+                fp16_16_inv.to_string()
+            ]),
+            json!([
+                fp16_8_inv.to_string(),
+                fp16_8_inv.to_string(),
+                fp16_4_inv.to_string()
+            ]),
+            json!([
+                fp16_16_inv.to_string(),
+                fp16_8_inv.to_string(),
+                fp16_4_inv.to_string()
+            ]),
+        ],
+        b"",
+    )
+    .await;
+    assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
+}
+
+#[tokio::test]
+async fn e2e_prio3_fixed64vec() {
+    let fp64_4_inv = fixed!(0.25: I1F63);
+    let fp64_8_inv = fixed!(0.125: I1F63);
+    let fp64_16_inv = fixed!(0.0625: I1F63);
+    let result = run(
+        QueryKind::TimeInterval,
+        json!({"type": "Prio3Aes128FixedPoint64BitBoundedL2VecSum", "entries": "3"}),
+        &[
+            json!([
+                fp64_4_inv.to_string(),
+                fp64_8_inv.to_string(),
+                fp64_8_inv.to_string()
+            ]),
+            json!([
+                fp64_16_inv.to_string(),
+                fp64_8_inv.to_string(),
+                fp64_16_inv.to_string()
+            ]),
+            json!([
+                fp64_8_inv.to_string(),
+                fp64_8_inv.to_string(),
+                fp64_4_inv.to_string()
+            ]),
+            json!([
+                fp64_16_inv.to_string(),
+                fp64_8_inv.to_string(),
+                fp64_4_inv.to_string()
+            ]),
+        ],
+        b"",
+    )
+    .await;
+    assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
+}
 
 #[tokio::test]
 async fn e2e_prio3_fixedvec_fixedsize() {

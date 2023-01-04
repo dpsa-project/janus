@@ -58,8 +58,12 @@ enum VdafType {
     Sum,
     /// Prio3Aes128Histogram
     Histogram,
+    /// Prio3FixedPoint16BitBoundedL2VecSum
+    FixedPoint16BitBoundedL2VecSum,
     /// Prio3FixedPoint32BitBoundedL2VecSum
     FixedPoint32BitBoundedL2VecSum,
+    /// Prio3FixedPoint64BitBoundedL2VecSum
+    FixedPoint64BitBoundedL2VecSum,
 }
 
 #[derive(Clone)]

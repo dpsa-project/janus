@@ -4,8 +4,8 @@ use base64::{
     engine::fast_portable::{FastPortable, NO_PAD},
 };
 use clap::{value_parser, Arg, Command};
-use fixed::types::extra::U31;
-use fixed::FixedI32;
+use fixed::types::extra::{U15, U31, U63};
+use fixed::{FixedI16, FixedI32, FixedI64};
 use janus_client::ClientParameters;
 use janus_core::{
     task::VdafInstance,
@@ -32,7 +32,9 @@ use warp::{hyper::StatusCode, reply::Response, Filter, Reply};
 enum Measurement {
     Number(NumberAsString<u128>),
     NumberVec(Vec<NumberAsString<u128>>),
-    FixedVec(Vec<NumberAsString<FixedI32<U31>>>),
+    Fixed32Vec(Vec<NumberAsString<FixedI32<U31>>>),
+    Fixed16Vec(Vec<NumberAsString<FixedI16<U15>>>),
+    Fixed64Vec(Vec<NumberAsString<FixedI64<U63>>>),
 }
 
 impl Measurement {
@@ -59,11 +61,29 @@ impl Measurement {
         }
     }
 
-    fn as_fixed_vec(&self) -> anyhow::Result<Vec<FixedI32<U31>>> {
+    fn as_fixed16_vec(&self) -> anyhow::Result<Vec<FixedI16<U15>>> {
         match self {
-            Measurement::FixedVec(vec) => Ok(vec.iter().map(|item| item.0).collect()),
+            Measurement::Fixed16Vec(vec) => Ok(vec.iter().map(|item| item.0).collect()),
             m => Err(anyhow!(
-                "cannot represent measurement {m:?} as a vector of fixed point numbers"
+                "cannot represent measurement {m:?} as a vector of 16 bit fixed point numbers"
+            )),
+        }
+    }
+
+    fn as_fixed32_vec(&self) -> anyhow::Result<Vec<FixedI32<U31>>> {
+        match self {
+            Measurement::Fixed32Vec(vec) => Ok(vec.iter().map(|item| item.0).collect()),
+            m => Err(anyhow!(
+                "cannot represent measurement {m:?} as a vector of 32 bit fixed point numbers"
+            )),
+        }
+    }
+
+    fn as_fixed64_vec(&self) -> anyhow::Result<Vec<FixedI64<U63>>> {
+        match self {
+            Measurement::Fixed64Vec(vec) => Ok(vec.iter().map(|item| item.0).collect()),
+            m => Err(anyhow!(
+                "cannot represent measurement {m:?} as a vector of 64 bit fixed point numbers"
             )),
         }
     }
@@ -190,11 +210,31 @@ async fn handle_upload(
                 .context("failed to construct Prio3Aes128Histogram VDAF")?;
             handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
         }
+
+        VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { entries } => {
+            let measurement = request.measurement.as_fixed16_vec()?;
+            let vdaf_client: Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>> =
+                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, entries).context(
+                    "failed to construct Prio3Aes128FixedPoint16BitBoundedL2VecSum VDAF",
+                )?;
+            handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
+        }
+
         VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { entries } => {
-            let measurement = request.measurement.as_fixed_vec()?;
+            let measurement = request.measurement.as_fixed32_vec()?;
             let vdaf_client: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
-                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, entries)
-                    .context("failed to construct Prio3Aes128CountVec VDAF")?;
+                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, entries).context(
+                    "failed to construct Prio3Aes128FixedPoint32BitBoundedL2VecSum VDAF",
+                )?;
+            handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
+        }
+
+        VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { entries } => {
+            let measurement = request.measurement.as_fixed64_vec()?;
+            let vdaf_client: Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>> =
+                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, entries).context(
+                    "failed to construct Prio3Aes128FixedPoint64BitBoundedL2VecSum VDAF",
+                )?;
             handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
         }
         _ => panic!("Unsupported VDAF: {:?}", vdaf_instance),
