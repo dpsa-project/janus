@@ -27,14 +27,27 @@ use std::net::{Ipv4Addr, SocketAddr};
 use url::Url;
 use warp::{hyper::StatusCode, reply::Response, Filter, Reply};
 
+// a wrapper enum to enable tagging the json with the fixedpoint type for deserialization
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+enum TaggedMeasurement {
+    Fixed16 {
+        num16: Vec<NumberAsString<FixedI16<U15>>>,
+    },
+    Fixed32 {
+        num32: Vec<NumberAsString<FixedI32<U31>>>,
+    },
+    Fixed64 {
+        num64: Vec<NumberAsString<FixedI64<U63>>>,
+    },
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 enum Measurement {
     Number(NumberAsString<u128>),
     NumberVec(Vec<NumberAsString<u128>>),
-    Fixed32Vec(Vec<NumberAsString<FixedI32<U31>>>),
-    Fixed16Vec(Vec<NumberAsString<FixedI16<U15>>>),
-    Fixed64Vec(Vec<NumberAsString<FixedI64<U63>>>),
+    FixedVec(TaggedMeasurement),
 }
 
 impl Measurement {
@@ -63,7 +76,9 @@ impl Measurement {
 
     fn as_fixed16_vec(&self) -> anyhow::Result<Vec<FixedI16<U15>>> {
         match self {
-            Measurement::Fixed16Vec(vec) => Ok(vec.iter().map(|item| item.0).collect()),
+            Measurement::FixedVec(TaggedMeasurement::Fixed16 { num16 }) => {
+                Ok(num16.iter().map(|item| item.0).collect())
+            }
             m => Err(anyhow!(
                 "cannot represent measurement {m:?} as a vector of 16 bit fixed point numbers"
             )),
@@ -72,7 +87,9 @@ impl Measurement {
 
     fn as_fixed32_vec(&self) -> anyhow::Result<Vec<FixedI32<U31>>> {
         match self {
-            Measurement::Fixed32Vec(vec) => Ok(vec.iter().map(|item| item.0).collect()),
+            Measurement::FixedVec(TaggedMeasurement::Fixed32 { num32 }) => {
+                Ok(num32.iter().map(|item| item.0).collect())
+            }
             m => Err(anyhow!(
                 "cannot represent measurement {m:?} as a vector of 32 bit fixed point numbers"
             )),
@@ -81,7 +98,9 @@ impl Measurement {
 
     fn as_fixed64_vec(&self) -> anyhow::Result<Vec<FixedI64<U63>>> {
         match self {
-            Measurement::Fixed64Vec(vec) => Ok(vec.iter().map(|item| item.0).collect()),
+            Measurement::FixedVec(TaggedMeasurement::Fixed64 { num64 }) => {
+                Ok(num64.iter().map(|item| item.0).collect())
+            }
             m => Err(anyhow!(
                 "cannot represent measurement {m:?} as a vector of 64 bit fixed point numbers"
             )),
