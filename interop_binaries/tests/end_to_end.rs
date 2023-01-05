@@ -668,22 +668,22 @@ async fn e2e_prio3_fixed32vec() {
         QueryKind::TimeInterval,
         json!({"type": "Prio3Aes128FixedPoint32BitBoundedL2VecSum", "entries": "3"}),
         &[
-            json!({"type": "Fixed32", "num32": [
+            json!({"type": "Fixed32", "vec": [
                 fp32_4_inv.to_string(),
                 fp32_8_inv.to_string(),
                 fp32_8_inv.to_string()
             ]}),
-            json!({"type" : "Fixed32", "num32":[
+            json!({"type" : "Fixed32", "vec":[
                 fp32_16_inv.to_string(),
                 fp32_8_inv.to_string(),
                 fp32_16_inv.to_string()
             ]}),
-            json!({"type" : "Fixed32", "num32":[
+            json!({"type" : "Fixed32", "vec":[
                 fp32_8_inv.to_string(),
                 fp32_8_inv.to_string(),
                 fp32_4_inv.to_string()
             ]}),
-            json!({"type" : "Fixed32", "num32":[
+            json!({"type" : "Fixed32", "vec":[
                 fp32_16_inv.to_string(),
                 fp32_8_inv.to_string(),
                 fp32_4_inv.to_string()
@@ -704,22 +704,22 @@ async fn e2e_prio3_fixed16vec() {
         QueryKind::TimeInterval,
         json!({"type": "Prio3Aes128FixedPoint16BitBoundedL2VecSum", "entries": "3"}),
         &[
-            json!({"type": "Fixed16", "num16": [
+            json!({"type": "Fixed16", "vec": [
                 fp16_4_inv.to_string(),
                 fp16_8_inv.to_string(),
                 fp16_8_inv.to_string()
             ]}),
-            json!({"type" : "Fixed16", "num16":[
+            json!({"type" : "Fixed16", "vec":[
                 fp16_16_inv.to_string(),
                 fp16_8_inv.to_string(),
                 fp16_16_inv.to_string()
             ]}),
-            json!({"type" : "Fixed16", "num16":[
+            json!({"type" : "Fixed16", "vec":[
                 fp16_8_inv.to_string(),
                 fp16_8_inv.to_string(),
                 fp16_4_inv.to_string()
             ]}),
-            json!({"type" : "Fixed16", "num16":[
+            json!({"type" : "Fixed16", "vec":[
                 fp16_16_inv.to_string(),
                 fp16_8_inv.to_string(),
                 fp16_4_inv.to_string()
@@ -740,22 +740,22 @@ async fn e2e_prio3_fixed64vec() {
         QueryKind::TimeInterval,
         json!({"type": "Prio3Aes128FixedPoint64BitBoundedL2VecSum", "entries": "3"}),
         &[
-            json!({"type": "Fixed64", "num64": [
+            json!({"type": "Fixed64", "vec": [
                 fp64_4_inv.to_string(),
                 fp64_8_inv.to_string(),
                 fp64_8_inv.to_string()
             ]}),
-            json!({"type" : "Fixed64", "num64":[
+            json!({"type" : "Fixed64", "vec":[
                 fp64_16_inv.to_string(),
                 fp64_8_inv.to_string(),
                 fp64_16_inv.to_string()
             ]}),
-            json!({"type" : "Fixed64", "num64":[
+            json!({"type" : "Fixed64", "vec":[
                 fp64_8_inv.to_string(),
                 fp64_8_inv.to_string(),
                 fp64_4_inv.to_string()
             ]}),
-            json!({"type" : "Fixed64", "num64":[
+            json!({"type" : "Fixed64", "vec":[
                 fp64_16_inv.to_string(),
                 fp64_8_inv.to_string(),
                 fp64_4_inv.to_string()
@@ -776,22 +776,22 @@ async fn e2e_prio3_fixedvec_fixedsize() {
         QueryKind::FixedSize,
         json!({"type": "Prio3Aes128FixedPoint32BitBoundedL2VecSum", "entries": "3"}),
         &[
-            json!({"type": "Fixed32", "num32": [
+            json!({"type": "Fixed32", "vec": [
                 fp32_4_inv.to_string(),
                 fp32_8_inv.to_string(),
                 fp32_8_inv.to_string()
             ]}),
-            json!({"type" : "Fixed32", "num32":[
+            json!({"type" : "Fixed32", "vec":[
                 fp32_16_inv.to_string(),
                 fp32_8_inv.to_string(),
                 fp32_16_inv.to_string()
             ]}),
-            json!({"type" : "Fixed32", "num32":[
+            json!({"type" : "Fixed32", "vec":[
                 fp32_8_inv.to_string(),
                 fp32_8_inv.to_string(),
                 fp32_4_inv.to_string()
             ]}),
-            json!({"type" : "Fixed32", "num32":[
+            json!({"type" : "Fixed32", "vec":[
                 fp32_16_inv.to_string(),
                 fp32_8_inv.to_string(),
                 fp32_4_inv.to_string()
