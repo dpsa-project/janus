@@ -5,7 +5,9 @@ use base64::{
     engine::fast_portable::{FastPortable, NO_PAD},
 };
 use clap::{value_parser, Arg, Command};
+#[cfg(feature = "fpvec_bounded_l2")]
 use fixed::types::extra::{U15, U31, U63};
+#[cfg(feature = "fpvec_bounded_l2")]
 use fixed::{FixedI16, FixedI32, FixedI64};
 use janus_collector::{Collector, CollectorParameters};
 use janus_core::{
@@ -21,6 +23,8 @@ use janus_messages::{
     query_type::QueryType, BatchId, Duration, FixedSizeQuery, HpkeConfig, Interval,
     PartialBatchSelector, Query, TaskId, Time,
 };
+#[cfg(feature = "fpvec_bounded_l2")]
+use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 use prio::{
     codec::{Decode, Encode},
     vdaf::{self, prio3::Prio3},
@@ -36,8 +40,6 @@ use std::{
 };
 use tokio::{spawn, sync::Mutex, task::JoinHandle};
 use warp::{hyper::StatusCode, reply::Response, Filter, Reply};
-
-use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 #[derive(Debug, Deserialize)]
 struct AddTaskRequest {
     task_id: String,
@@ -99,6 +101,7 @@ struct CollectResult {
 enum AggregationResult {
     Number(NumberAsString<u128>),
     NumberVec(Vec<NumberAsString<u128>>),
+    #[cfg(feature = "fpvec_bounded_l2")]
     FloatVec(Vec<NumberAsString<f64>>),
 }
 
@@ -356,6 +359,7 @@ async fn handle_collect_start(
             .await?
         }
 
+        #[cfg(feature = "fpvec_bounded_l2")]
         (
             ParsedQuery::TimeInterval(batch_interval),
             janus_core::task::VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { entries },
@@ -379,6 +383,7 @@ async fn handle_collect_start(
             .await?
         }
 
+        #[cfg(feature = "fpvec_bounded_l2")]
         (
             ParsedQuery::TimeInterval(batch_interval),
             janus_core::task::VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { entries },
@@ -402,6 +407,7 @@ async fn handle_collect_start(
             .await?
         }
 
+        #[cfg(feature = "fpvec_bounded_l2")]
         (
             ParsedQuery::TimeInterval(batch_interval),
             janus_core::task::VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { entries },
@@ -461,6 +467,7 @@ async fn handle_collect_start(
             .await?
         }
 
+        #[cfg(feature = "fpvec_bounded_l2")]
         (
             ParsedQuery::FixedSize(fixed_size_query),
             janus_core::task::VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { entries },
@@ -484,6 +491,7 @@ async fn handle_collect_start(
             .await?
         }
 
+        #[cfg(feature = "fpvec_bounded_l2")]
         (
             ParsedQuery::FixedSize(fixed_size_query),
             janus_core::task::VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { entries },
@@ -507,6 +515,7 @@ async fn handle_collect_start(
             .await?
         }
 
+        #[cfg(feature = "fpvec_bounded_l2")]
         (
             ParsedQuery::FixedSize(fixed_size_query),
             janus_core::task::VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { entries },
@@ -566,7 +575,8 @@ async fn handle_collect_start(
             .await?
         }
 
-        (_, vdaf_instance) => panic!("Unsupported VDAF: {:?}", vdaf_instance),
+        (_, vdaf_instance) => {
+            panic!("Unsupported VDAF: {:?}", vdaf_instance)},
     };
 
     let mut collect_jobs_guard = collect_jobs.lock().await;

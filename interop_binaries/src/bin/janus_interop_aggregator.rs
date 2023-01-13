@@ -35,6 +35,7 @@ async fn handle_add_task(
     keyring: &Mutex<HpkeConfigRegistry>,
     request: AggregatorAddTaskRequest,
 ) -> anyhow::Result<()> {
+        
     let vdaf = request.vdaf.into();
     let leader_authentication_token =
         AuthenticationToken::from(request.leader_authentication_token.into_bytes());

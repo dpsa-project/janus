@@ -14,6 +14,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["kube-rustls"]
+fp_bounded_l2 = ["dep:fixed"]
 tokio-console = ["dep:console-subscriber"]
 jaeger = ["dep:tracing-opentelemetry", "dep:opentelemetry-jaeger"]
 otlp = [
@@ -46,7 +47,7 @@ deadpool = { version = "0.9.5", features = ["rt_tokio_1"] }
 deadpool-postgres = "0.10.3"
 derivative = "2.2.0"
 futures = "0.3.25"
-fixed = "1.19"
+fixed = { version = "1.19", optional = true }
 http = "0.2.8"
 http-api-problem = "0.56.0"
 hyper = "0.14.23"

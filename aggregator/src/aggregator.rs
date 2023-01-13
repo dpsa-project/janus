@@ -25,7 +25,9 @@ use crate::{
     try_join, URL_SAFE_NO_PAD,
 };
 use bytes::Bytes;
+#[cfg(feature = "fpvec_bounded_l2")]
 use fixed::types::extra::{U15, U31, U63};
+#[cfg(feature = "fpvec_bounded_l2")]
 use fixed::{FixedI16, FixedI32, FixedI64};
 use http::{
     header::{CACHE_CONTROL, CONTENT_TYPE, LOCATION},
@@ -51,13 +53,15 @@ use opentelemetry::{
     metrics::{Counter, Histogram, Meter, Unit},
     Context, KeyValue,
 };
+#[cfg(feature = "fpvec_bounded_l2")]
+use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 use prio::{
     codec::{Decode, Encode, ParameterizedDecode},
     vdaf::{
         self,
         prio3::{
-            Prio3, Prio3Aes128Count, Prio3Aes128CountVecMultithreaded,
-            Prio3Aes128FixedPointBoundedL2VecSum, Prio3Aes128Histogram, Prio3Aes128Sum,
+            Prio3, Prio3Aes128Count, Prio3Aes128CountVecMultithreaded, Prio3Aes128Histogram,
+            Prio3Aes128Sum,
         },
         PrepareTransition,
     },
@@ -638,6 +642,7 @@ impl TaskAggregator {
                 VdafOps::Prio3Aes128Histogram(Arc::new(vdaf), verify_key)
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { entries } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>> =
                     Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *entries)?;
@@ -645,6 +650,7 @@ impl TaskAggregator {
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { entries } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
                     Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *entries)?;
@@ -652,6 +658,7 @@ impl TaskAggregator {
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { entries } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>> =
                     Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *entries)?;
@@ -826,14 +833,17 @@ enum VdafOps {
         Arc<Prio3Aes128Histogram>,
         VerifyKey<PRIO3_AES128_VERIFY_KEY_LENGTH>,
     ),
+    #[cfg(feature = "fpvec_bounded_l2")]
     Prio3Aes128FixedPoint16BitBoundedL2VecSum(
         Arc<Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>>>,
         VerifyKey<PRIO3_AES128_VERIFY_KEY_LENGTH>,
     ),
+    #[cfg(feature = "fpvec_bounded_l2")]
     Prio3Aes128FixedPoint32BitBoundedL2VecSum(
         Arc<Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>,
         VerifyKey<PRIO3_AES128_VERIFY_KEY_LENGTH>,
     ),
+    #[cfg(feature = "fpvec_bounded_l2")]
     Prio3Aes128FixedPoint64BitBoundedL2VecSum(
         Arc<Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>>>,
         VerifyKey<PRIO3_AES128_VERIFY_KEY_LENGTH>,
@@ -908,6 +918,7 @@ impl VdafOps {
                 report,
             )
             .await,
+            #[cfg(feature = "fpvec_bounded_l2")]
             VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(vdaf, _) => {
                 Self::handle_upload_generic::<
                     PRIO3_AES128_VERIFY_KEY_LENGTH,
@@ -924,6 +935,7 @@ impl VdafOps {
                 )
                 .await
             }
+            #[cfg(feature = "fpvec_bounded_l2")]
             VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(vdaf, _) => {
                 Self::handle_upload_generic::<
                     PRIO3_AES128_VERIFY_KEY_LENGTH,
@@ -940,6 +952,7 @@ impl VdafOps {
                 )
                 .await
             }
+            #[cfg(feature = "fpvec_bounded_l2")]
             VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(vdaf, _) => {
                 Self::handle_upload_generic::<
                     PRIO3_AES128_VERIFY_KEY_LENGTH,
@@ -1050,6 +1063,7 @@ impl VdafOps {
                 )
                 .await
             }
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(vdaf, verify_key),
@@ -1069,6 +1083,7 @@ impl VdafOps {
                 )
                 .await
             }
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(vdaf, verify_key),
@@ -1088,6 +1103,7 @@ impl VdafOps {
                 )
                 .await
             }
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(vdaf, verify_key),
@@ -1192,6 +1208,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(vdaf, verify_key),
@@ -1212,6 +1229,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(vdaf, verify_key),
@@ -1232,6 +1250,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(vdaf, verify_key),
@@ -1339,6 +1358,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(vdaf, _),
@@ -1358,6 +1378,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(vdaf, _),
@@ -1377,6 +1398,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(vdaf, _),
@@ -1472,6 +1494,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(vdaf, _),
@@ -1491,6 +1514,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(vdaf, _),
@@ -1510,6 +1534,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(vdaf, _),
@@ -2255,6 +2280,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(_, _),
@@ -2268,6 +2294,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(_, _),
@@ -2281,6 +2308,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(_, _),
@@ -2344,6 +2372,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(_, _),
@@ -2357,6 +2386,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(_, _),
@@ -2370,6 +2400,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(_, _),
@@ -2540,6 +2571,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(_, _),
@@ -2553,6 +2585,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(_, _),
@@ -2566,6 +2599,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(_, _),
@@ -2629,6 +2663,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(_, _),
@@ -2642,6 +2677,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(_, _),
@@ -2655,6 +2691,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(_, _),
@@ -2833,6 +2870,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(_, _),
@@ -2846,6 +2884,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(_, _),
@@ -2859,6 +2898,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(_, _),
@@ -2922,6 +2962,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(_, _),
@@ -2935,6 +2976,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(_, _),
@@ -2948,6 +2990,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(_, _),
@@ -3064,6 +3107,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(_, _),
@@ -3077,6 +3121,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(_, _),
@@ -3090,6 +3135,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(_, _),
@@ -3151,6 +3197,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(_, _),
@@ -3164,6 +3211,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(_, _),
@@ -3177,6 +3225,7 @@ impl VdafOps {
                 .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(_, _),

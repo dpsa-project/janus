@@ -14,7 +14,9 @@ use crate::{
 };
 use anyhow::{anyhow, Context as _, Result};
 use derivative::Derivative;
+#[cfg(feature = "fpvec_bounded_l2")]
 use fixed::types::extra::{U15, U31, U63};
+#[cfg(feature = "fpvec_bounded_l2")]
 use fixed::{FixedI16, FixedI32, FixedI64};
 use futures::future::{join_all, BoxFuture, FutureExt};
 use janus_core::{task::VdafInstance, time::Clock};
@@ -28,13 +30,15 @@ use opentelemetry::{
     metrics::{Counter, Histogram, Meter, Unit},
     Context, KeyValue,
 };
+#[cfg(feature = "fpvec_bounded_l2")]
+use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 use prio::{
     codec::{Decode, Encode, ParameterizedDecode},
     vdaf::{
         self,
         prio3::{
-            Prio3, Prio3Aes128Count, Prio3Aes128CountVecMultithreaded,
-            Prio3Aes128FixedPointBoundedL2VecSum, Prio3Aes128Histogram, Prio3Aes128Sum,
+            Prio3, Prio3Aes128Count, Prio3Aes128CountVecMultithreaded, Prio3Aes128Histogram,
+            Prio3Aes128Sum,
         },
         PrepareTransition,
     },
@@ -110,6 +114,7 @@ impl AggregationJobDriver {
                     .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { entries },
@@ -119,6 +124,7 @@ impl AggregationJobDriver {
                     .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { entries },
@@ -128,6 +134,7 @@ impl AggregationJobDriver {
                     .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::TimeInterval,
                 VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { entries },
@@ -161,6 +168,7 @@ impl AggregationJobDriver {
                     .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { entries },
@@ -170,6 +178,7 @@ impl AggregationJobDriver {
                     .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { entries },
@@ -179,6 +188,7 @@ impl AggregationJobDriver {
                     .await
             }
 
+            #[cfg(feature = "fpvec_bounded_l2")]
             (
                 task::QueryType::FixedSize { .. },
                 VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { entries },
@@ -796,16 +806,19 @@ impl AggregationJobDriver {
                     .await
             }
 
+#[cfg(feature = "fpvec_bounded_l2")]
             (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { .. }) => {
                 self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>>>(datastore, lease)
                     .await
             }
 
+#[cfg(feature = "fpvec_bounded_l2")]
             (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { .. }) => {
                 self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, lease)
                     .await
             }
 
+#[cfg(feature = "fpvec_bounded_l2")]
             (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { .. }) => {
                 self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>>>(datastore, lease)
                     .await
@@ -831,16 +844,19 @@ impl AggregationJobDriver {
                     .await
             }
 
+#[cfg(feature = "fpvec_bounded_l2")]
             (task::QueryType::FixedSize { .. }, VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { .. }) => {
                 self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>>>(datastore, lease)
                     .await
             }
 
+#[cfg(feature = "fpvec_bounded_l2")]
             (task::QueryType::FixedSize { .. }, VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { .. }) => {
                 self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, lease)
                     .await
             }
 
+#[cfg(feature = "fpvec_bounded_l2")]
             (task::QueryType::FixedSize { .. }, VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { .. }) => {
                 self.cancel_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, FixedSize, Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>>>(datastore, lease)
                     .await

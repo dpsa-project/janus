@@ -652,6 +652,7 @@ mod tests {
     };
     use assert_matches::assert_matches;
     use chrono::{TimeZone, Utc};
+    #[cfg(feature = "fpvec_bounded_l2")]
     use fixed_macro::fixed;
     use janus_core::{
         hpke::{
@@ -1000,6 +1001,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "fpvec_bounded_l2")]
     async fn successful_collect_prio3_fixedpoint_boundedl2_vec_sum() {
         install_test_trace_subscriber();
 
