@@ -89,6 +89,7 @@ impl AggregationJobDriver {
         lease: Arc<Lease<AcquiredAggregationJob>>,
     ) -> Result<()> {
         // TODO(#468): support both TimeInterval & FixedSize tasks (instead of assuming TimeInterval).
+        println!("Stepping aggregatio job");
         match lease.leased().vdaf() {
             VdafInstance::Real(janus_core::task::VdafInstance::Prio3Aes128Count) => {
                 let vdaf = Arc::new(Prio3::new_aes128_count(2)?);
@@ -116,9 +117,12 @@ impl AggregationJobDriver {
             VdafInstance::Real(
                 janus_core::task::VdafInstance::Prio3Aes128FixedPointBoundedL2VecSum { entries },
             ) => {
+                println!(" => started for fixed");
                 let vdaf = Arc::new(Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *entries)?);
-                self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, vdaf, lease)
-                    .await
+                let res = self.step_aggregation_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>>>(datastore, vdaf, lease)
+                    .await;
+                println!(" => ended for fixed");
+                res
             }
 
             _ => panic!("VDAF {:?} is not yet supported", lease.leased().vdaf()),
@@ -229,6 +233,9 @@ impl AggregationJobDriver {
                         .await
                         .map_err(|err| datastore::Error::User(err.into()))?;
 
+                    let client_reports_size = client_reports.len();
+                    let repaggsize = report_aggregations.len();
+                    println!(" => stepping success (repaggsize: {repaggsize}, clientrep: {client_reports_size})");
                     Ok((
                         Arc::new(task),
                         aggregation_job,
@@ -291,6 +298,7 @@ impl AggregationJobDriver {
         A::PrepareState: PartialEq + Eq + Send + Sync + Encode,
         A::PrepareMessage: PartialEq + Eq + Send + Sync,
     {
+        println!("beginning aggregate job.");
         // Zip the report aggregations at start with the client reports, verifying that their IDs
         // match. We use asserts here as the conditions we are checking should be guaranteed by the
         // caller.
@@ -313,6 +321,8 @@ impl AggregationJobDriver {
             );
         }
 
+
+        println!(" => compute report shares");
         // Compute report shares to send to helper, and decrypt our input shares & initialize
         // preparation state.
         let mut report_aggregations_to_write = Vec::new();
@@ -356,6 +366,8 @@ impl AggregationJobDriver {
                 }
             };
 
+
+            println!(" => decrypt leader input share");
             // Decrypt leader input share & transform into our first transition.
             let (hpke_config, hpke_private_key) = match task
                 .hpke_keys()
@@ -422,6 +434,8 @@ impl AggregationJobDriver {
                 }
             };
 
+
+            println!(" => public share...");
             let public_share = match A::PublicShare::get_decoded_with_param(
                 &vdaf,
                 report.public_share(),
@@ -440,6 +454,7 @@ impl AggregationJobDriver {
                 }
             };
 
+            println!(" => initialize leader prep state");
             // Initialize the leader's preparation state from the input share.
             let (prep_state, prep_share) = match vdaf.prepare_init(
                 verify_key.as_bytes(),
@@ -475,6 +490,7 @@ impl AggregationJobDriver {
             });
         }
 
+        println!(" => construct request");
         // Construct request, send it to the helper, and process the response.
         // TODO(#235): abandon work immediately on "terminal" failures from helper, or other
         // unexepected cases such as unknown/unexpected content type.
@@ -497,7 +513,8 @@ impl AggregationJobDriver {
         .await?;
         let resp = AggregateInitializeResp::get_decoded(&resp_bytes)?;
 
-        self.process_response_from_helper(
+        println!(" => await helper response");
+        let res = self.process_response_from_helper(
             datastore,
             vdaf,
             lease,
@@ -507,7 +524,9 @@ impl AggregationJobDriver {
             report_aggregations_to_write,
             resp.prepare_steps(),
         )
-        .await
+        .await;
+        println!(" => got helper response {:?}", res);
+        res
     }
 
     async fn step_aggregation_job_aggregate_continue<
@@ -635,6 +654,8 @@ impl AggregationJobDriver {
         A::PrepareMessage: Send + Sync,
         A::PrepareState: Send + Sync + Encode,
     {
+        let sas = stepped_aggregations.len();
+        println!("processing response from helper, stepped aggregation size {}", sas);
         // Handle response, computing the new report aggregations to be stored.
         if stepped_aggregations.len() != prep_steps.len() {
             return Err(anyhow!(
@@ -658,6 +679,7 @@ impl AggregationJobDriver {
 
             let new_state = match helper_prep_step.result() {
                 PrepareStepResult::Continued(payload) => {
+                    println!("PrepStepResult:Continued");
                     // If the leader continued too, combine the leader's prepare share with the
                     // helper's to compute next round's prepare message. Prepare to store the
                     // leader's new state & the prepare message. If the leader didn't continue,
@@ -675,10 +697,12 @@ impl AggregationJobDriver {
                         });
                         match prep_msg {
                             Ok(prep_msg) => {
+                                println!("successfull prepare message");
                                 ReportAggregationState::Waiting(leader_prep_state, Some(prep_msg))
                             }
                             Err(error) => {
                                 info!(report_id = %report_aggregation.report_id(), ?error, "Couldn't compute prepare message");
+                                println!("get prep message error: {error}");
                                 self.aggregate_step_failure_counter.add(
                                     &Context::current(),
                                     1,
@@ -689,6 +713,7 @@ impl AggregationJobDriver {
                         }
                     } else {
                         warn!(report_id = %report_aggregation.report_id(), "Helper continued but leader did not");
+                        println!("Warning: helper continued, but leader didnt.");
                         self.aggregate_step_failure_counter.add(
                             &Context::current(),
                             1,
@@ -699,6 +724,7 @@ impl AggregationJobDriver {
                 }
 
                 PrepareStepResult::Finished => {
+                    println!("PrepStepResult:Finished");
                     // If the leader finished too, we are done; prepare to store the output share.
                     // If the leader didn't finish too, we transition to INVALID.
                     if let PrepareTransition::Finish(out_share) = leader_transition {
@@ -725,11 +751,13 @@ impl AggregationJobDriver {
                             1,
                             &[KeyValue::new("type", "finish_mismatch")],
                         );
+                        println!("going to invalid.");
                         ReportAggregationState::Invalid
                     }
                 }
 
                 PrepareStepResult::Failed(err) => {
+                    println!("Prepstep:Failed");
                     // If the helper failed, we move to FAILED immediately.
                     // TODO(#236): is it correct to just record the transition error that the helper reports?
                     info!(report_id = %report_aggregation.report_id(), helper_error = ?err, "Helper couldn't step report aggregation");
@@ -751,8 +779,10 @@ impl AggregationJobDriver {
             .iter()
             .all(|ra| !matches!(ra.state(), ReportAggregationState::Waiting(_, _)));
         let aggregation_job_to_write = if aggregation_job_is_finished {
+            println!("Aggregation job finished");
             Some(aggregation_job.with_state(AggregationJobState::Finished))
         } else {
+            println!("Aggregation job not finished");
             None
         };
         let report_aggregations_to_write = Arc::new(report_aggregations_to_write);
@@ -769,7 +799,10 @@ impl AggregationJobDriver {
                 Box::pin(async move {
                     let report_aggregations_future =
                         try_join_all(report_aggregations_to_write.iter().map(
-                            |report_aggregation| tx.update_report_aggregation(report_aggregation),
+                            |report_aggregation| {
+                                println!("Updating report aggregation with {:?}", report_aggregation);
+                                tx.update_report_aggregation(report_aggregation)
+                            },
                         ));
                     let aggregation_job_future = try_join_all(
                         aggregation_job_to_write

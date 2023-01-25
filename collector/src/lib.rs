@@ -53,6 +53,7 @@
 //! ```
 
 use backoff::{backoff::Backoff, ExponentialBackoff};
+use base64::URL_SAFE_NO_PAD;
 use derivative::Derivative;
 use http_api_problem::HttpApiProblem;
 use janus_core::{
@@ -316,6 +317,96 @@ where
         }
     }
 
+    // /// Send a collect request to the leader aggregator.
+    // #[tracing::instrument(err)]
+    // async fn start_collection_with_rewritten_redirect(
+    //     &self,
+    //     batch_interval: Interval,
+    //     aggregation_parameter: &V::AggregationParam,
+    //     hostname: &str,
+    //     port: u16,
+    // ) -> Result<CollectJob<V::AggregationParam>, Error> // {
+    //     println!("before collect request");
+    //     let collect_request = CollectReq::new(
+    //         self.parameters.task_id,
+    //         Query::new_time_interval(batch_interval),
+    //         aggregation_parameter.get_encoded(),
+    //     );
+    //     let url = self.parameters.collect_endpoint()?;
+    //     println!("after url");
+
+    //     let response_res = retry_http_request(
+    //         self.parameters.http_request_retry_parameters.clone(),
+    //         || async {
+    //             println!("inside http request loop.");
+    //             let url = url.clone();
+    //             println!("url is: {url}");
+    //             let mut request = self
+    //                 .http_client
+    //                 .post(url.clone())
+    //                 .header(CONTENT_TYPE, CollectReq::<TimeInterval>::MEDIA_TYPE)
+    //                 .body(collect_request.get_encoded());
+    //             // let req_string = request.to_string();
+    //             match &self.parameters.authentication {
+    //                 Authentication::DapAuthToken(token) => {
+    //                     let encoded_auth_token = base64::encode_config(token.as_bytes(), URL_SAFE_NO_PAD);
+    //                     request = request.header(DAP_AUTH_HEADER, encoded_auth_token);
+    //                 }
+    //             }
+    //             println!(" -> sending request.");
+    //             println!("    req: {request:?}");
+
+    //             let res = request.send().await;
+    //             println!(" -> got result.");
+    //             println!("    res: {res:?}");
+    //             res
+    //         },
+    //     )
+    //     .await;
+
+    //     println!("after response_res");
+
+    //     let response = match response_res {
+    //         // Successful response or unretryable error status code:
+    //         Ok(response) => {
+    //             let status = response.status();
+    //             if status == StatusCode::SEE_OTHER {
+    //                 response
+    //             } else if status.is_client_error() || status.is_server_error() {
+    //                 return Err(Error::Http(response_to_problem_details(response).await));
+    //             } else {
+    //                 return Err(Error::Http(HttpApiProblem::new(status)));
+    //             }
+    //         }
+    //         // Retryable error status code, but ran out of retries:
+    //         Err(Ok(response)) => {
+    //             return Err(Error::Http(response_to_problem_details(response).await))
+    //         }
+    //         // Lower level errors, either unretryable or ran out of retries:
+    //         Err(Err(error)) => return Err(Error::HttpClient(error)),
+    //     };
+
+    //     println!("after response");
+
+    //     let location_header_value = response
+    //         .headers()
+    //         .get(LOCATION)
+    //         .ok_or(Error::MissingLocationHeader)?
+    //         .to_str()?;
+    //     let collect_job_url = location_header_value.parse()?;
+
+    //     println!("location_header_value original is: {location_header_value}");
+
+    //     Ok(CollectJob::new(
+    //         collect_job_url,
+    //         batch_interval,
+    //         aggregation_parameter.clone(),
+    //     ))
+
+    // }
+
+
+
     /// Send a collect request to the leader aggregator.
     #[tracing::instrument(err)]
     async fn start_collection(
@@ -323,30 +414,45 @@ where
         batch_interval: Interval,
         aggregation_parameter: &V::AggregationParam,
     ) -> Result<CollectJob<V::AggregationParam>, Error> {
+        println!("before collect request");
         let collect_request = CollectReq::new(
             self.parameters.task_id,
             Query::new_time_interval(batch_interval),
             aggregation_parameter.get_encoded(),
         );
         let url = self.parameters.collect_endpoint()?;
+        println!("after url");
 
         let response_res = retry_http_request(
             self.parameters.http_request_retry_parameters.clone(),
             || async {
+                println!("inside http request loop.");
+                let url = url.clone();
+                println!("url is: {url}");
                 let mut request = self
                     .http_client
                     .post(url.clone())
                     .header(CONTENT_TYPE, CollectReq::<TimeInterval>::MEDIA_TYPE)
                     .body(collect_request.get_encoded());
+                // let req_string = request.to_string();
                 match &self.parameters.authentication {
                     Authentication::DapAuthToken(token) => {
-                        request = request.header(DAP_AUTH_HEADER, token.as_bytes())
+                        let encoded_auth_token = base64::encode_config(token.as_bytes(), URL_SAFE_NO_PAD);
+                        request = request.header(DAP_AUTH_HEADER, encoded_auth_token);
                     }
                 }
-                request.send().await
+                println!(" -> sending request.");
+                println!("    req: {request:?}");
+
+                let res = request.send().await;
+                println!(" -> got result.");
+                println!("    res: {res:?}");
+                res
             },
         )
         .await;
+
+        println!("after response_res");
 
         let response = match response_res {
             // Successful response or unretryable error status code:
@@ -368,12 +474,16 @@ where
             Err(Err(error)) => return Err(Error::HttpClient(error)),
         };
 
+        println!("after response");
+
         let location_header_value = response
             .headers()
             .get(LOCATION)
             .ok_or(Error::MissingLocationHeader)?
             .to_str()?;
         let collect_job_url = location_header_value.parse()?;
+
+        println!("location_header_value is {location_header_value}");
 
         Ok(CollectJob::new(
             collect_job_url,
@@ -389,13 +499,16 @@ where
         &self,
         job: &CollectJob<V::AggregationParam>,
     ) -> Result<PollResult<V::AggregateResult>, Error> {
+        println!("inside poll_once");
         let response_res = retry_http_request(
             self.parameters.http_request_retry_parameters.clone(),
             || async {
                 let mut request = self.http_client.get(job.collect_job_url.clone());
                 match &self.parameters.authentication {
                     Authentication::DapAuthToken(token) => {
-                        request = request.header(DAP_AUTH_HEADER, token.as_bytes())
+                        let encoded_auth_token = base64::encode_config(token.as_bytes(), URL_SAFE_NO_PAD);
+                        request = request.header(DAP_AUTH_HEADER, encoded_auth_token);
+                        // request = request.header(DAP_AUTH_HEADER, token.as_bytes())
                     }
                 }
                 request.send().await
@@ -403,18 +516,24 @@ where
         )
         .await;
 
+        println!(" => after retry_http_request.");
+        println!(" => response was: {response_res:?}");
+
         let response = match response_res {
             // Successful response or unretryable error status code:
             Ok(response) => {
                 let status = response.status();
+                println!("got response, status is: {status}");
                 match status {
                     StatusCode::OK => response,
                     StatusCode::ACCEPTED => {
+                        println!("inside accepted branch");
                         let retry_after_opt = response
                             .headers()
                             .get(RETRY_AFTER)
                             .map(RetryAfter::try_from)
                             .transpose()?;
+                        println!("retrying in {retry_after_opt:?}");
                         return Ok(PollResult::NextAttempt(retry_after_opt));
                     }
                     _ if status.is_client_error() || status.is_server_error() => {
@@ -425,6 +544,7 @@ where
             }
             // Retryable error status code, but ran out of retries:
             Err(Ok(response)) => {
+                println!(" => too many retries.");
                 return Err(Error::Http(response_to_problem_details(response).await))
             }
             // Lower level errors, either unretryable or ran out of retries:
@@ -435,6 +555,7 @@ where
             .headers()
             .get(CONTENT_TYPE)
             .ok_or(Error::BadContentType(None))?;
+        println!("content_type is: {content_type:?}");
         if content_type != CollectResp::<TimeInterval>::MEDIA_TYPE {
             return Err(Error::BadContentType(Some(content_type.clone())));
         }
@@ -497,12 +618,15 @@ where
             .max_elapsed_time
             .map(|duration| Instant::now() + duration);
         loop {
+            println!("inside poll loop!");
             // poll_once() already retries upon server and connection errors, so propagate any error
             // received from it and return immediately.
             let retry_after = match self.poll_once(job).await? {
                 PollResult::CollectionResult(aggregate_result) => return Ok(aggregate_result),
                 PollResult::NextAttempt(retry_after) => retry_after,
             };
+
+            println!(" => after poll_once!");
 
             // Compute a sleep duration based on the Retry-After header, if available.
             let retry_after_duration = match retry_after {
@@ -550,6 +674,29 @@ where
             .start_collection(batch_interval, aggregation_parameter)
             .await?;
         self.poll_until_complete(&job).await
+    }
+
+    pub async fn collect_with_rewritten_url(
+        &self,
+        // collector: &Collector<V>,
+        batch_interval: Interval,
+        aggregation_parameter: &V::AggregationParam,
+        host: &str,
+        port: u16,
+    ) -> Result<Collection<V::AggregateResult>, Error>
+    where
+        for<'a> Vec<u8>: From<&'a <V as vdaf::Vdaf>::AggregateShare>,
+    {
+        let mut job = self
+            .start_collection(batch_interval, aggregation_parameter)
+            .await?;
+        println!("Got job after start collection {job:?}");
+        job.collect_job_url.set_host(Some(host))?;
+        job.collect_job_url.set_port(Some(port)).unwrap();
+        println!("Patched job is: {job:?}");
+        let res = self.poll_until_complete(&job).await;
+        println!("Result of polling is: {res:?}");
+        res
     }
 }
 

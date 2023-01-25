@@ -46,7 +46,8 @@ http = "0.2"
 itertools = "0.10"
 janus_client = { path = "../client" }
 janus_collector = { path = "../collector", features = ["test-util"] }
-prio = { version = "0.10.0", features = ["multithreaded"] }
+# prio = { version = "0.10.0", features = ["multithreaded"] }
+prio = {git = "https://github.com/dpsa-project/libprio-rs.git", branch ="fixedpoint-backported-bugfix", features = ["multithreaded"]}
 tempfile = "3"
 
 [build-dependencies]
