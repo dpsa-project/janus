@@ -616,6 +616,24 @@ where
         let job = self.start_collection(query, aggregation_parameter).await?;
         self.poll_until_complete(&job).await
     }
+
+    pub async fn collect_with_rewritten_url<Q: QueryType>(
+        self,
+        query: Query<Q>,
+        aggregation_parameter: &V::AggregationParam,
+        host: &str,
+        port: u16,
+    ) -> Result<Collection<V::AggregateResult, Q>, Error>
+    where
+        for<'a> Vec<u8>: From<&'a <V as vdaf::Vdaf>::AggregateShare>,
+    {
+        let mut job = self
+            .start_collection(query, aggregation_parameter)
+            .await?;
+        job.collect_job_url.set_host(Some(host))?;
+        job.collect_job_url.set_port(Some(port)).unwrap();
+        self.poll_until_complete(&job).await
+    }
 }
 
 #[cfg(feature = "test-util")]

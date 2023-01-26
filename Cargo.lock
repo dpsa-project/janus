@@ -1602,7 +1602,7 @@ dependencies = [
  "opentelemetry-semantic-conventions",
  "postgres-protocol",
  "postgres-types",
- "prio 0.10.0 (git+https://github.com/dpsa-project/libprio-rs.git?branch=release/0.10-hotfix-normvector-bugfix)",
+ "prio",
  "prometheus",
  "rand",
  "reqwest",
@@ -1650,7 +1650,7 @@ dependencies = [
  "janus_core",
  "janus_messages",
  "mockito",
- "prio 0.10.0 (git+https://github.com/dpsa-project/libprio-rs.git?branch=release/0.10-hotfix-normvector-bugfix)",
+ "prio",
  "rand",
  "reqwest",
  "thiserror",
@@ -1679,7 +1679,7 @@ dependencies = [
  "janus_core",
  "janus_messages",
  "mockito",
- "prio 0.10.0 (git+https://github.com/dpsa-project/libprio-rs.git?branch=release/0.10-hotfix-normvector-bugfix)",
+ "prio",
  "rand",
  "reqwest",
  "retry-after",
@@ -1710,7 +1710,7 @@ dependencies = [
  "kube",
  "lazy_static",
  "mockito",
- "prio 0.10.0 (git+https://github.com/dpsa-project/libprio-rs.git?branch=release/0.10-hotfix-normvector-bugfix)",
+ "prio",
  "rand",
  "reqwest",
  "ring",
@@ -1747,7 +1747,7 @@ dependencies = [
  "k8s-openapi",
  "kube",
  "portpicker",
- "prio 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "prio",
  "rand",
  "reqwest",
  "serde_json",
@@ -1779,7 +1779,7 @@ dependencies = [
  "janus_messages",
  "lazy_static",
  "opentelemetry",
- "prio 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "prio",
  "rand",
  "regex",
  "reqwest",
@@ -1807,7 +1807,7 @@ dependencies = [
  "derivative",
  "hex",
  "num_enum",
- "prio 0.10.0 (git+https://github.com/dpsa-project/libprio-rs.git?branch=release/0.10-hotfix-normvector-bugfix)",
+ "prio",
  "rand",
  "serde",
  "serde_test",
@@ -2623,25 +2623,6 @@ checksum = "e97e3215779627f01ee256d2fad52f3d95e8e1c11e9fc6fd08f7cd455d5d5c78"
 dependencies = [
  "proc-macro2",
  "syn",
-]
-
-[[package]]
-name = "prio"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0453e1ec5f2f48af9a67aab1d812f9aec48619dda0d9a59e2f79ebd235448ec"
-dependencies = [
- "aes",
- "base64 0.13.1",
- "byteorder",
- "cmac",
- "ctr",
- "fixed",
- "getrandom",
- "rayon",
- "serde",
- "static_assertions",
- "thiserror",
 ]
 
 [[package]]
