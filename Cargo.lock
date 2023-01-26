@@ -228,6 +228,12 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ea22880d78093b0cbe17c89f64a7d457941e65759157ec6cb31a31d652b05e5"
+
+[[package]]
+name = "base64"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
@@ -1602,7 +1608,7 @@ dependencies = [
  "opentelemetry-semantic-conventions",
  "postgres-protocol",
  "postgres-types",
- "prio",
+ "prio 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "prometheus",
  "rand",
  "reqwest",
@@ -1650,7 +1656,7 @@ dependencies = [
  "janus_core",
  "janus_messages",
  "mockito",
- "prio",
+ "prio 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand",
  "reqwest",
  "thiserror",
@@ -1679,7 +1685,7 @@ dependencies = [
  "janus_core",
  "janus_messages",
  "mockito",
- "prio",
+ "prio 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand",
  "reqwest",
  "retry-after",
@@ -1710,7 +1716,7 @@ dependencies = [
  "kube",
  "lazy_static",
  "mockito",
- "prio",
+ "prio 0.10.0 (git+https://github.com/dpsa-project/libprio-rs.git?branch=fixedpoint-backported-bugfix)",
  "rand",
  "reqwest",
  "ring",
@@ -1747,7 +1753,7 @@ dependencies = [
  "k8s-openapi",
  "kube",
  "portpicker",
- "prio",
+ "prio 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand",
  "reqwest",
  "serde_json",
@@ -1779,7 +1785,7 @@ dependencies = [
  "janus_messages",
  "lazy_static",
  "opentelemetry",
- "prio",
+ "prio 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand",
  "regex",
  "reqwest",
@@ -1807,7 +1813,7 @@ dependencies = [
  "derivative",
  "hex",
  "num_enum",
- "prio",
+ "prio 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand",
  "serde",
  "serde_test",
@@ -2633,6 +2639,24 @@ checksum = "a0453e1ec5f2f48af9a67aab1d812f9aec48619dda0d9a59e2f79ebd235448ec"
 dependencies = [
  "aes",
  "base64 0.13.1",
+ "byteorder",
+ "cmac",
+ "ctr",
+ "fixed",
+ "getrandom",
+ "rayon",
+ "serde",
+ "static_assertions",
+ "thiserror",
+]
+
+[[package]]
+name = "prio"
+version = "0.10.0"
+source = "git+https://github.com/dpsa-project/libprio-rs.git?branch=fixedpoint-backported-bugfix#ac100ca3f1da59290379f1612d104c732099e000"
+dependencies = [
+ "aes",
+ "base64 0.20.0",
  "byteorder",
  "cmac",
  "ctr",
