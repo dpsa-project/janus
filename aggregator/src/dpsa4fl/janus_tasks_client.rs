@@ -225,9 +225,9 @@ impl JanusTasksClient
 
         println!("collecting result now");
 
-        // let result = collector_client.collect_with_rewritten_url(Interval::new(start, duration)?, &aggregation_parameter, &host.to_string(), port).await?;
+        let result = collector_client.collect_with_rewritten_url(Query::new(Interval::new(start, duration)?), &aggregation_parameter, &host.to_string(), port).await?;
 
-        let result = collector_client.collect(Query::new(Interval::new(start, duration)?), &aggregation_parameter).await?;
+        // let result = collector_client.collect(Query::new(Interval::new(start, duration)?), &aggregation_parameter).await?;
 
         Ok(result)
     }
