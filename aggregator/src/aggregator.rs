@@ -390,11 +390,12 @@ impl<C: Clock> Aggregator<C> {
         if task_aggregator.task.role() != &Role::Helper {
             return Err(Error::UnrecognizedTask(task_id));
         }
+        let auth_token = auth_token.map(|t| AuthenticationToken::from(t.into_bytes()));
         if !auth_token
             .map(|t| {
                 task_aggregator
                     .task
-                    .check_aggregator_auth_token(&t.into_bytes().into())
+                    .check_aggregator_auth_token(&t)
             })
             .unwrap_or(false)
         {

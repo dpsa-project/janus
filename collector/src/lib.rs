@@ -55,6 +55,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 use backoff::{backoff::Backoff, ExponentialBackoff};
+use base64::{engine::general_purpose, Engine};
 use derivative::Derivative;
 use http_api_problem::HttpApiProblem;
 use janus_core::{
@@ -398,7 +399,9 @@ where
                     .body(collect_request.get_encoded());
                 match &self.parameters.authentication {
                     Authentication::DapAuthToken(token) => {
-                        request = request.header(DAP_AUTH_HEADER, token.as_bytes())
+                        let encoded_auth_token = general_purpose::URL_SAFE_NO_PAD.encode(token.as_bytes());
+                            // base64::encode_config(token.as_bytes(), URL_SAFE_NO_PAD);
+                        request = request.header(DAP_AUTH_HEADER, encoded_auth_token)
                     }
                 }
                 request.send().await
@@ -455,7 +458,8 @@ where
                 let mut request = self.http_client.get(job.collect_job_url.clone());
                 match &self.parameters.authentication {
                     Authentication::DapAuthToken(token) => {
-                        request = request.header(DAP_AUTH_HEADER, token.as_bytes())
+                        let encoded_auth_token = general_purpose::URL_SAFE_NO_PAD.encode(token.as_bytes());
+                        request = request.header(DAP_AUTH_HEADER, encoded_auth_token)
                     }
                 }
                 request.send().await
