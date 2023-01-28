@@ -211,10 +211,15 @@ impl JanusTasksClient
 
         let collector_client = Collector::new(params, vdaf_collector, collector_http_client);
 
-        let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 60*5;
-        let rounded_deadline = (deadline / TIME_PRECISION) * TIME_PRECISION;
-        let start = Time::from_seconds_since_epoch(0);
-        let duration = Duration::from_seconds(rounded_deadline);
+        let start = UNIX_EPOCH.elapsed()?.as_secs();
+        let rounded_start = (start / TIME_PRECISION) * TIME_PRECISION;
+        let real_start = Time::from_seconds_since_epoch(rounded_start - TIME_PRECISION * 5);
+        let duration = Duration::from_seconds(TIME_PRECISION * 15);
+
+        // let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 60*5;
+        // let rounded_deadline = (deadline / TIME_PRECISION) * TIME_PRECISION;
+        // let start = Time::from_seconds_since_epoch(0);
+        // let duration = Duration::from_seconds(rounded_deadline);
 
         let aggregation_parameter = ();
 
@@ -225,7 +230,7 @@ impl JanusTasksClient
 
         println!("collecting result now");
 
-        let result = collector_client.collect_with_rewritten_url(Query::new(Interval::new(start, duration)?), &aggregation_parameter, &host.to_string(), port).await?;
+        let result = collector_client.collect_with_rewritten_url(Query::new(Interval::new(real_start, duration)?), &aggregation_parameter, &host.to_string(), port).await?;
 
         // let result = collector_client.collect(Query::new(Interval::new(start, duration)?), &aggregation_parameter).await?;
 
