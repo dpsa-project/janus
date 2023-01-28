@@ -19,7 +19,7 @@ use crate::task::PRIO3_AES128_VERIFY_KEY_LENGTH;
 use super::core::{TrainingSessionId, CreateTrainingSessionRequest, CreateTrainingSessionResponse, StartRoundRequest, Locations};
 
 pub type Fx = FixedI32<U31>;
-pub const TIME_PRECISION: u64 = 60;
+pub const TIME_PRECISION: u64 = 3600;
 
 
 pub struct JanusTasksClient
