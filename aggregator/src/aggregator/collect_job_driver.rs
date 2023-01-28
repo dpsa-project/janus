@@ -284,6 +284,8 @@ impl CollectJobDriver {
             })
             .await?;
 
+        println!("got task from datastore!");
+
         if matches!(collect_job.state(), CollectJobState::Finished { .. }) {
             warn!("Collect job being stepped already has a computed helper share");
             self.metrics
@@ -297,6 +299,8 @@ impl CollectJobDriver {
                 .await
                 .map_err(|e| datastore::Error::User(e.into()))?;
 
+
+        println!("sending aggregate share to helper!");
         // Send an aggregate share request to the helper.
         let req = AggregateShareReq::<Q>::new(
             *task.id(),
@@ -317,6 +321,8 @@ impl CollectJobDriver {
         )
         .await?;
 
+        println!("sending share is done!, storing helper aggregate share in data store");
+
         // Store the helper aggregate share in the datastore so that a later request to a collect
         // job URI can serve it up.
         let collect_job = Arc::new(
@@ -328,10 +334,15 @@ impl CollectJobDriver {
                 leader_aggregate_share,
             }),
         );
+
+        println!("running transaction now?");
+
         datastore
             .run_tx(|tx| {
                 let (lease, collect_job) = (Arc::clone(&lease), Arc::clone(&collect_job));
                 let metrics = self.metrics.clone();
+
+                println!("inside transaction");
 
                 Box::pin(async move {
                     let maybe_updated_collect_job = tx
@@ -345,6 +356,7 @@ impl CollectJobDriver {
 
                     match maybe_updated_collect_job.state() {
                         CollectJobState::Start => {
+                            println!("we started job?");
                             tx.update_collect_job::<L, Q, A>(&collect_job).await?;
                             tx.release_collect_job(&lease).await?;
                             metrics.jobs_finished_counter.add(&Context::current(), 1, &[]);
@@ -363,6 +375,8 @@ impl CollectJobDriver {
                         }
 
                         state => {
+
+                            println!("some other state.");
                             // It shouldn't be possible for a collect job to move to the abandoned
                             // or finished state while this collect job driver held its lease.
                             metrics.unexpected_job_state_counter.add(&Context::current(), 1, &[KeyValue::new("state", Value::from(format!("{state}")))]);
