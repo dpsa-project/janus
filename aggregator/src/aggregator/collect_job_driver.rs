@@ -248,8 +248,13 @@ impl CollectJobDriver {
         println!("step_collect_job_generic!");
         let (task, collect_job, batch_aggregations) = datastore
             .run_tx(|tx| {
+
+                println!("running transaction on datastore!");
+
+
                 let lease = Arc::clone(&lease);
                 Box::pin(async move {
+                    println!("inside box!");
                     // TODO(#224): Consider fleshing out `AcquiredCollectJob` to include a `Task`,
                     // `A::AggregationParam`, etc. so that we don't have to do more DB queries here.
                     let task = tx
@@ -260,6 +265,7 @@ impl CollectJobDriver {
                                 Error::UnrecognizedTask(*lease.leased().task_id()).into(),
                             )
                         })?;
+                    println!("defined task successfully");
 
                     let collect_job = tx
                         .get_collect_job::<L, Q, A>(lease.leased().collect_job_id())
@@ -271,6 +277,8 @@ impl CollectJobDriver {
                             )
                         })?;
 
+                    println!("got collect job successfully");
+
                     let batch_aggregations = Q::get_batch_aggregations_for_collect_identifier(
                         tx,
                         &task,
@@ -278,6 +286,8 @@ impl CollectJobDriver {
                         collect_job.aggregation_parameter(),
                     )
                     .await?;
+
+                    println!("got batch aggregations successfully");
 
                     Ok((task, collect_job, batch_aggregations))
                 })
