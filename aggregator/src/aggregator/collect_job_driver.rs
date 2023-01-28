@@ -56,6 +56,7 @@ pub struct CollectJobDriver {
 impl CollectJobDriver {
     /// Create a new [`CollectJobDriver`].
     pub fn new(http_client: reqwest::Client, meter: &Meter) -> Self {
+        println!("new collect job driver created");
         Self {
             http_client,
             metrics: CollectJobDriverMetrics::new(meter),
@@ -79,6 +80,8 @@ impl CollectJobDriver {
         datastore: Arc<Datastore<C>>,
         lease: Arc<Lease<AcquiredCollectJob>>,
     ) -> Result<(), Error> {
+        println!("step_collect_job!");
+
         match (lease.leased().query_type(), lease.leased().vdaf()) {
             (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128Count) => {
                 self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128Count>(
@@ -242,6 +245,7 @@ impl CollectJobDriver {
         A::OutputShare: PartialEq + Eq + Send + Sync + for<'a> TryFrom<&'a [u8]>,
         for<'a> &'a A::OutputShare: Into<Vec<u8>>,
     {
+        println!("step_collect_job_generic!");
         let (task, collect_job, batch_aggregations) = datastore
             .run_tx(|tx| {
                 let lease = Arc::clone(&lease);
