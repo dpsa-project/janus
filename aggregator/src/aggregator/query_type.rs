@@ -227,21 +227,30 @@ pub trait CollectableQueryType: AccumulableQueryType {
         for<'a> &'a A::AggregateShare: Into<Vec<u8>>,
         for<'a> <A::AggregateShare as TryFrom<&'a [u8]>>::Error: std::fmt::Debug,
     {
+        println!("inside get_batch_aggregations_for_collect_identifier");
         let batch_aggregations = gather_errors(
             join_all(
-                Self::batch_identifiers_for_collect_identifier(task, collect_identifier).map(
-                    |batch_identifier| {
-                        let (task_id, aggregation_param) = (*task.id(), aggregation_param.clone());
-                        async move {
-                            tx.get_batch_aggregation(
-                                &task_id,
-                                &batch_identifier,
-                                &aggregation_param,
-                            )
-                            .await
-                        }
-                    },
-                ),
+                {
+                    let ids = Self::batch_identifiers_for_collect_identifier(task, collect_identifier);
+                    println!("got ids");
+                    ids.map(
+                        |batch_identifier| {
+                            println!("inside for id {batch_identifier}");
+                            let (task_id, aggregation_param) = (*task.id(), aggregation_param.clone());
+                            async move {
+                                println!("before get tx");
+                                let res = tx.get_batch_aggregation(
+                                    &task_id,
+                                    &batch_identifier,
+                                    &aggregation_param,
+                                ).await;
+                                println!("got result");
+                                res
+                            }
+                        },
+                    )
+                }
+                ,
             )
             .await,
         )?;
