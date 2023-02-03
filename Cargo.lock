@@ -2628,7 +2628,7 @@ dependencies = [
 [[package]]
 name = "prio"
 version = "0.10.0"
-source = "git+https://github.com/dpsa-project/libprio-rs.git?branch=release/0.10-hotfix-normvector-bugfix#ba113990116336537754e798402664f84415dc37"
+source = "git+https://github.com/dpsa-project/libprio-rs.git?branch=feature-simple-dp#66710dbb3a6ff8beb828b7a36027dccc0b14b6cd"
 dependencies = [
  "aes",
  "base64 0.21.0",

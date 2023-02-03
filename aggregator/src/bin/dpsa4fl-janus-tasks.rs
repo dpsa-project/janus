@@ -321,6 +321,9 @@ struct TrainingSession
 
     // my hpke config & key
     hpke_config_and_key: HpkeKeypair,
+
+    // noise param
+    noise_parameter: u8,
 }
 
 pub struct TaskProvisioner<C: Clock>
@@ -401,7 +404,7 @@ impl<C: Clock> TaskProvisioner<C>
             vec![training_session.leader_endpoint.clone(), training_session.helper_endpoint.clone()] ,
             QueryType::TimeInterval,
             // QueryType::FixedSize { max_batch_size: u64::MAX },
-            VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { length: training_session.num_gradient_entries },
+            VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { length: training_session.num_gradient_entries, noise_param: training_session.noise_parameter },
             training_session.role,
             vec![training_session.verify_key.clone()],
             10, // max_batch_query_count
@@ -433,7 +436,8 @@ impl<C: Clock> TaskProvisioner<C>
             verify_key_encoded,
             collector_hpke_config,
             collector_auth_token_encoded,
-            leader_auth_token_encoded
+            leader_auth_token_encoded,
+            noise_parameter,
         } = request;
 
         // prepare id
@@ -473,6 +477,7 @@ impl<C: Clock> TaskProvisioner<C>
             collector_auth_token,
             leader_auth_token,
             hpke_config_and_key,
+            noise_parameter,
         };
 
         // insert into list

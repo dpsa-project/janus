@@ -38,7 +38,8 @@ janus_collector.workspace = true
 janus_core.workspace = true
 janus_messages.workspace = true
 opentelemetry = { version = "0.18", features = ["metrics"] }
-prio = {git = "https://github.com/dpsa-project/libprio-rs.git", branch ="release/0.10-hotfix-normvector-bugfix", features = [], default-features = false }
+# prio = {git = "https://github.com/dpsa-project/libprio-rs.git", branch ="release/0.10-hotfix-normvector-bugfix", features = [], default-features = false }
+prio = {git = "https://github.com/dpsa-project/libprio-rs.git", branch ="feature-simple-dp", features = ["multithreaded"]}
 # prio = { version = "0.10.0", features = ["multithreaded"] }
 rand = "0.8"
 regex = { version = "1", optional = true }

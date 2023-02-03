@@ -137,6 +137,9 @@ pub struct CreateTrainingSessionRequest
     // auth tokens
     pub collector_auth_token_encoded: String, // in unpadded base64url
     pub leader_auth_token_encoded: String, // in unpadded base64url
+
+    // noise params
+    pub noise_parameter: u8,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
