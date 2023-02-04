@@ -739,6 +739,10 @@ impl AggregationJobDriver {
         } else {
             None
         };
+        // add noise
+        accumulator.add_noise(vdaf)?;
+
+        // write into store
         let report_aggregations_to_write = Arc::new(report_aggregations_to_write);
         let aggregation_job_to_write = Arc::new(aggregation_job_to_write);
         let accumulator = Arc::new(accumulator);

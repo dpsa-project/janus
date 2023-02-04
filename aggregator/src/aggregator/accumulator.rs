@@ -69,6 +69,14 @@ where
         rslt
     }
 
+    pub fn add_noise(&mut self, vdaf: &A) -> Result<(), anyhow::Error> {
+        println!("adding noise in accumulator.");
+        self.accumulations.iter_mut().map(|(_, accumulation)| {
+            accumulation.aggregate_share = vdaf.postprocess(&self.aggregation_param, accumulation.aggregate_share.clone()).unwrap();
+        }).for_each(drop);
+        Ok(())
+    }
+
     /// Write the accumulated aggregate shares, report counts and checksums to the datastore. If a
     /// batch aggregation already exists for some accumulator, it is updated. If no batch
     /// aggregation exists, one is created and initialized with the accumulated values.

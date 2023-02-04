@@ -2040,6 +2040,7 @@ impl VdafOps {
                         ));
                     }
 
+                    // accumulator.add_noise(vdaf).unwrap();
                     accumulator.flush_to_datastore(tx).await?;
                     Ok(prep_steps)
                 })
@@ -2227,6 +2228,8 @@ impl VdafOps {
                     });
                     tx.update_aggregation_job(&aggregation_job).await?;
 
+                    println!("adding noise in aggregator.");
+                    accumulator.add_noise(&vdaf).unwrap();
                     accumulator.flush_to_datastore(tx).await?;
 
                     Ok(AggregateContinueResp::new(response_prep_steps))
