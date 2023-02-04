@@ -13,6 +13,7 @@ use http::{
 use janus_messages::{TaskId, HpkeConfig, Role, Time, Duration};
 use opentelemetry::metrics::{Unit, Meter, Histogram};
 use prio::codec::{Decode, Encode, CodecError};
+use prio::flp::types::fixedpoint_l2::NoiseParameterType;
 use rand::random;
 use serde_json::json;
 use tokio::fs;
@@ -323,7 +324,7 @@ struct TrainingSession
     hpke_config_and_key: HpkeKeypair,
 
     // noise param
-    noise_parameter: u8,
+    noise_parameter: NoiseParameterType,
 }
 
 pub struct TaskProvisioner<C: Clock>

@@ -8,6 +8,7 @@ use janus_core::{hpke::{HpkePrivateKey, generate_hpke_config_and_private_key, Hp
 use janus_messages::{Role, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId, TaskId, Interval, Time, Duration, query_type::TimeInterval, Query};
 use janus_collector::{Collector, CollectorParameters, Collection};
 use prio::{codec::{Encode, Decode, CodecError}, vdaf::prio3::{Prio3Aes128CountVec, Prio3Aes128FixedPointBoundedL2VecSum}};
+use prio::flp::types::fixedpoint_l2::{noise_parameter_no_noise, NoiseParameterType};
 use anyhow::{anyhow, Context, Result, Error};
 use rand::random;
 use fixed::types::extra::{U15, U31, U63};
@@ -32,7 +33,7 @@ pub struct JanusTasksClient
     // hpke_private_key: HpkePrivateKey,
     leader_auth_token: AuthenticationToken,
     collector_auth_token: AuthenticationToken,
-    noise_parameter: u8,
+    noise_parameter: NoiseParameterType,
 }
 
 
@@ -41,7 +42,7 @@ impl JanusTasksClient
     pub fn new(
         location: Locations,
         num_gradient_entries: usize,
-        noise_parameter: u8,
+        noise_parameter: NoiseParameterType,
     ) -> Self
     {
         let leader_auth_token = rand::random::<[u8; 16]>().to_vec().into();
@@ -185,7 +186,7 @@ impl JanusTasksClient
             // self.hpke_private_key.clone(),
         );
 
-        let vdaf_collector = Prio3Aes128FixedPointBoundedL2VecSum::<Fx>::new_aes128_fixedpoint_boundedl2_vec_sum(2, self.num_gradient_entries, 0)?;
+        let vdaf_collector = Prio3Aes128FixedPointBoundedL2VecSum::<Fx>::new_aes128_fixedpoint_boundedl2_vec_sum(2, self.num_gradient_entries, noise_parameter_no_noise)?;
 
 
         // we need to redirect urls returned by janus because janus gives us its

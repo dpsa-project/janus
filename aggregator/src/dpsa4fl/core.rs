@@ -8,6 +8,7 @@ use std::{fmt::Display, io::Cursor, collections::HashMap};
 use janus_core::hpke::{HpkePrivateKey, generate_hpke_config_and_private_key, HpkeKeypair};
 use janus_messages::{HpkeConfigId, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId, Role, TaskId};
 use prio::codec::{Encode, Decode, CodecError};
+use prio::flp::types::fixedpoint_l2::NoiseParameterType;
 use rand::random;
 use serde::{Serialize, Deserialize};
 use url::Url;
@@ -139,7 +140,7 @@ pub struct CreateTrainingSessionRequest
     pub leader_auth_token_encoded: String, // in unpadded base64url
 
     // noise params
-    pub noise_parameter: u8,
+    pub noise_parameter: NoiseParameterType,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -3,6 +3,7 @@ use rand::{distributions::Standard, prelude::Distribution};
 use reqwest::Url;
 use ring::constant_time;
 use serde::{Deserialize, Serialize};
+use prio::flp::types::fixedpoint_l2::NoiseParameterType;
 
 /// HTTP header where auth tokens are provided in messages between participants.
 pub const DAP_AUTH_HEADER: &str = "DAP-Auth-Token";
@@ -32,7 +33,7 @@ pub enum VdafInstance {
     /// A `prio3` 32-bit fixedpoint vector sum with bounded L2 norm using the AES
     /// 128 pseudorandom generator.
     #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3Aes128FixedPoint32BitBoundedL2VecSum { length: usize, noise_param: u8 },
+    Prio3Aes128FixedPoint32BitBoundedL2VecSum { length: usize, noise_param: NoiseParameterType },
     /// A `prio3` 64-bit fixedpoint vector sum with bounded L2 norm using the AES
     /// 128 pseudorandom generator.
     #[cfg(feature = "fpvec_bounded_l2")]

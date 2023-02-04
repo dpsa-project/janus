@@ -57,6 +57,7 @@ use opentelemetry::{
 #[cfg(feature = "fpvec_bounded_l2")]
 use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 use prio::{
+    flp::types::fixedpoint_l2::noise_parameter_no_noise,
     codec::{Decode, Encode, ParameterizedDecode},
     vdaf::{
         self,
@@ -648,7 +649,7 @@ impl TaskAggregator {
             #[cfg(feature = "fpvec_bounded_l2")]
             VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { length } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>> =
-                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, 0)?;
+                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, noise_parameter_no_noise)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
             }
@@ -664,7 +665,7 @@ impl TaskAggregator {
             #[cfg(feature = "fpvec_bounded_l2")]
             VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { length } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>> =
-                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, 0)?;
+                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, noise_parameter_no_noise)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
             }
