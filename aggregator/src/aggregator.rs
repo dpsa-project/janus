@@ -647,15 +647,15 @@ impl TaskAggregator {
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { length } => {
+            VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { length, noise_param } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>> =
-                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, noise_parameter_no_noise)?;
+                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, *noise_param)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { length , noise_param } => {
+            VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { length, noise_param } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
                     Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, *noise_param)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
@@ -663,9 +663,9 @@ impl TaskAggregator {
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { length } => {
+            VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { length, noise_param } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>> =
-                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, noise_parameter_no_noise)?;
+                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, *noise_param)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
             }
@@ -2229,7 +2229,7 @@ impl VdafOps {
                     });
                     tx.update_aggregation_job(&aggregation_job).await?;
 
-                    // This is special dpsa-project functionality. We postprocess the the aggregate shares,
+                    // This is special dpsa-project functionality. We postprocess the aggregate shares,
                     // i.e., we add noise for differential privacy.
                     accumulator.postprocess(&vdaf).unwrap();
 
