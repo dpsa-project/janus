@@ -2229,8 +2229,10 @@ impl VdafOps {
                     });
                     tx.update_aggregation_job(&aggregation_job).await?;
 
-                    println!("adding noise in aggregator.");
-                    accumulator.add_noise(&vdaf).unwrap();
+                    // This is special dpsa-project functionality. We postprocess the the aggregate shares,
+                    // i.e., we add noise for differential privacy.
+                    accumulator.postprocess(&vdaf).unwrap();
+
                     accumulator.flush_to_datastore(tx).await?;
 
                     Ok(AggregateContinueResp::new(response_prep_steps))

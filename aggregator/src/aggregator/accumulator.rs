@@ -69,11 +69,12 @@ where
         rslt
     }
 
-    pub fn add_noise(&mut self, vdaf: &A) -> Result<(), anyhow::Error> {
-        println!("adding noise in accumulator.");
-        self.accumulations.iter_mut().map(|(_, accumulation)| {
-            accumulation.aggregate_share = vdaf.postprocess(&self.aggregation_param, accumulation.aggregate_share.clone()).unwrap();
-        }).for_each(drop);
+    /// Applies the postprocessing function to all aggregate shares. This is special
+    /// dpsa-project functionality and not part of the original janus code.
+    pub fn postprocess(&mut self, vdaf: &A) -> Result<(), anyhow::Error> {
+        for (_ , mut accumulation) in &mut self.accumulations {
+                accumulation.aggregate_share = vdaf.postprocess(&self.aggregation_param, accumulation.aggregate_share.clone())?;
+        }
         Ok(())
     }
 

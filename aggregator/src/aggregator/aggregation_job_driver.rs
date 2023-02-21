@@ -740,10 +740,11 @@ impl AggregationJobDriver {
         } else {
             None
         };
-        // add noise
-        accumulator.add_noise(vdaf)?;
 
-        // write into store
+        // This is special dpsa-project functionality. We postprocess the the aggregate shares,
+        // i.e., we add noise for differential privacy.
+        accumulator.postprocess(vdaf)?;
+
         let report_aggregations_to_write = Arc::new(report_aggregations_to_write);
         let aggregation_job_to_write = Arc::new(aggregation_job_to_write);
         let accumulator = Arc::new(accumulator);
