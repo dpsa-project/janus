@@ -69,6 +69,15 @@ where
         rslt
     }
 
+    /// Applies the postprocessing function to all aggregate shares. This is special
+    /// dpsa-project functionality and not part of the original janus code.
+    pub fn postprocess(&mut self, vdaf: &A) -> Result<(), anyhow::Error> {
+        for (_ , mut accumulation) in &mut self.accumulations {
+                accumulation.aggregate_share = vdaf.postprocess(&self.aggregation_param, accumulation.aggregate_share.clone())?;
+        }
+        Ok(())
+    }
+
     /// Write the accumulated aggregate shares, report counts and checksums to the datastore. If a
     /// batch aggregation already exists for some accumulator, it is updated. If no batch
     /// aggregation exists, one is created and initialized with the accumulated values.

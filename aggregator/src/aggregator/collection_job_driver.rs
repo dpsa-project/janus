@@ -59,6 +59,7 @@ pub struct CollectionJobDriver {
 impl CollectionJobDriver {
     /// Create a new [`CollectionJobDriver`].
     pub fn new(http_client: reqwest::Client, meter: &Meter) -> Self {
+        println!("new collect job driver created");
         Self {
             http_client,
             metrics: CollectionJobDriverMetrics::new(meter),
@@ -82,6 +83,8 @@ impl CollectionJobDriver {
         datastore: Arc<Datastore<C>>,
         lease: Arc<Lease<AcquiredCollectionJob>>,
     ) -> Result<(), Error> {
+        println!("step_collect_job!");
+
         match (lease.leased().query_type(), lease.leased().vdaf()) {
             (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128Count) => {
                 self.step_collection_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128Count>(
@@ -259,6 +262,7 @@ impl CollectionJobDriver {
                                 Error::UnrecognizedTask(*lease.leased().task_id()).into(),
                             )
                         })?;
+                    println!("defined task successfully");
 
                     let collection_job = tx
                         .get_collection_job::<L, Q, A>(lease.leased().collection_job_id())
@@ -271,6 +275,8 @@ impl CollectionJobDriver {
                                 .into(),
                             )
                         })?;
+
+                    println!("got collect job successfully");
 
                     let batch_aggregations = Q::get_batch_aggregations_for_collect_identifier(
                         tx,
@@ -298,6 +304,8 @@ impl CollectionJobDriver {
                 .await
                 .map_err(|e| datastore::Error::User(e.into()))?;
 
+
+        println!("sending aggregate share to helper!");
         // Send an aggregate share request to the helper.
         let req = AggregateShareReq::<Q>::new(
             BatchSelector::new(collection_job.batch_identifier().clone()),
@@ -317,6 +325,8 @@ impl CollectionJobDriver {
         )
         .await?;
 
+        println!("sending share is done!, storing helper aggregate share in data store");
+
         // Store the helper aggregate share in the datastore so that a later request to a collect
         // job URI can serve it up.
         let collection_job = Arc::new(
@@ -328,10 +338,15 @@ impl CollectionJobDriver {
                 leader_aggregate_share,
             }),
         );
+
+        println!("running transaction now?");
+
         datastore
             .run_tx_with_name("step_collection_job_2", |tx| {
                 let (lease, collection_job) = (Arc::clone(&lease), Arc::clone(&collection_job));
                 let metrics = self.metrics.clone();
+
+                println!("inside transaction");
 
                 Box::pin(async move {
                     let maybe_updated_collection_job = tx
