@@ -57,6 +57,7 @@ use opentelemetry::{
 #[cfg(feature = "fpvec_bounded_l2")]
 use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 use prio::{
+    flp::types::fixedpoint_l2::noise_parameter_no_noise,
     codec::{Decode, Encode, ParameterizedDecode},
     vdaf::{
         self,
@@ -390,11 +391,12 @@ impl<C: Clock> Aggregator<C> {
         if task_aggregator.task.role() != &Role::Helper {
             return Err(Error::UnrecognizedTask(task_id));
         }
+        let auth_token = auth_token.map(|t| AuthenticationToken::from(t.into_bytes()));
         if !auth_token
             .map(|t| {
                 task_aggregator
                     .task
-                    .check_aggregator_auth_token(&t.into_bytes().into())
+                    .check_aggregator_auth_token(&t)
             })
             .unwrap_or(false)
         {
@@ -645,25 +647,25 @@ impl TaskAggregator {
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { length } => {
+            VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { length, noise_param } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>> =
-                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length)?;
+                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, *noise_param)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
                 VdafOps::Prio3Aes128FixedPoint16BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { length } => {
+            VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { length, noise_param } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
-                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length)?;
+                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, *noise_param)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
                 VdafOps::Prio3Aes128FixedPoint32BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { length } => {
+            VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { length, noise_param } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>> =
-                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length)?;
+                    Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, *noise_param)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
                 VdafOps::Prio3Aes128FixedPoint64BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
             }
@@ -2039,6 +2041,7 @@ impl VdafOps {
                         ));
                     }
 
+                    // accumulator.add_noise(vdaf).unwrap();
                     accumulator.flush_to_datastore(tx).await?;
                     Ok(prep_steps)
                 })
@@ -2225,6 +2228,10 @@ impl VdafOps {
                         }
                     });
                     tx.update_aggregation_job(&aggregation_job).await?;
+
+                    // This is special dpsa-project functionality. We postprocess the aggregate shares,
+                    // i.e., we add noise for differential privacy.
+                    accumulator.postprocess(&vdaf).unwrap();
 
                     accumulator.flush_to_datastore(tx).await?;
 

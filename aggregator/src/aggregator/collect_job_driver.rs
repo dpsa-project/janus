@@ -56,6 +56,7 @@ pub struct CollectJobDriver {
 impl CollectJobDriver {
     /// Create a new [`CollectJobDriver`].
     pub fn new(http_client: reqwest::Client, meter: &Meter) -> Self {
+        println!("new collect job driver created");
         Self {
             http_client,
             metrics: CollectJobDriverMetrics::new(meter),
@@ -79,6 +80,8 @@ impl CollectJobDriver {
         datastore: Arc<Datastore<C>>,
         lease: Arc<Lease<AcquiredCollectJob>>,
     ) -> Result<(), Error> {
+        println!("step_collect_job!");
+
         match (lease.leased().query_type(), lease.leased().vdaf()) {
             (task::QueryType::TimeInterval, VdafInstance::Prio3Aes128Count) => {
                 self.step_collect_job_generic::<PRIO3_AES128_VERIFY_KEY_LENGTH, C, TimeInterval, Prio3Aes128Count>(
@@ -242,10 +245,16 @@ impl CollectJobDriver {
         A::OutputShare: PartialEq + Eq + Send + Sync + for<'a> TryFrom<&'a [u8]>,
         for<'a> &'a A::OutputShare: Into<Vec<u8>>,
     {
+        println!("step_collect_job_generic!");
         let (task, collect_job, batch_aggregations) = datastore
             .run_tx(|tx| {
+
+                println!("running transaction on datastore!");
+
+
                 let lease = Arc::clone(&lease);
                 Box::pin(async move {
+                    println!("inside box!");
                     // TODO(#224): Consider fleshing out `AcquiredCollectJob` to include a `Task`,
                     // `A::AggregationParam`, etc. so that we don't have to do more DB queries here.
                     let task = tx
@@ -256,6 +265,7 @@ impl CollectJobDriver {
                                 Error::UnrecognizedTask(*lease.leased().task_id()).into(),
                             )
                         })?;
+                    println!("defined task successfully");
 
                     let collect_job = tx
                         .get_collect_job::<L, Q, A>(lease.leased().collect_job_id())
@@ -267,6 +277,8 @@ impl CollectJobDriver {
                             )
                         })?;
 
+                    println!("got collect job successfully");
+
                     let batch_aggregations = Q::get_batch_aggregations_for_collect_identifier(
                         tx,
                         &task,
@@ -275,10 +287,14 @@ impl CollectJobDriver {
                     )
                     .await?;
 
+                    println!("got batch aggregations successfully");
+
                     Ok((task, collect_job, batch_aggregations))
                 })
             })
             .await?;
+
+        println!("got task from datastore!");
 
         if matches!(collect_job.state(), CollectJobState::Finished { .. }) {
             warn!("Collect job being stepped already has a computed helper share");
@@ -293,6 +309,8 @@ impl CollectJobDriver {
                 .await
                 .map_err(|e| datastore::Error::User(e.into()))?;
 
+
+        println!("sending aggregate share to helper!");
         // Send an aggregate share request to the helper.
         let req = AggregateShareReq::<Q>::new(
             *task.id(),
@@ -313,6 +331,8 @@ impl CollectJobDriver {
         )
         .await?;
 
+        println!("sending share is done!, storing helper aggregate share in data store");
+
         // Store the helper aggregate share in the datastore so that a later request to a collect
         // job URI can serve it up.
         let collect_job = Arc::new(
@@ -324,10 +344,15 @@ impl CollectJobDriver {
                 leader_aggregate_share,
             }),
         );
+
+        println!("running transaction now?");
+
         datastore
             .run_tx(|tx| {
                 let (lease, collect_job) = (Arc::clone(&lease), Arc::clone(&collect_job));
                 let metrics = self.metrics.clone();
+
+                println!("inside transaction");
 
                 Box::pin(async move {
                     let maybe_updated_collect_job = tx
@@ -341,6 +366,7 @@ impl CollectJobDriver {
 
                     match maybe_updated_collect_job.state() {
                         CollectJobState::Start => {
+                            println!("we started job?");
                             tx.update_collect_job::<L, Q, A>(&collect_job).await?;
                             tx.release_collect_job(&lease).await?;
                             metrics.jobs_finished_counter.add(&Context::current(), 1, &[]);
@@ -359,6 +385,8 @@ impl CollectJobDriver {
                         }
 
                         state => {
+
+                            println!("some other state.");
                             // It shouldn't be possible for a collect job to move to the abandoned
                             // or finished state while this collect job driver held its lease.
                             metrics.unexpected_job_state_counter.add(&Context::current(), 1, &[KeyValue::new("state", Value::from(format!("{state}")))]);

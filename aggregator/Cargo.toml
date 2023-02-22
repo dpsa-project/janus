@@ -13,7 +13,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["kube-rustls"]
+default = ["kube-rustls", "fpvec_bounded_l2"]
 fpvec_bounded_l2 = ["dep:fixed", "janus_core/fpvec_bounded_l2"]
 tokio-console = ["dep:console-subscriber"]
 jaeger = ["dep:tracing-opentelemetry", "dep:opentelemetry-jaeger"]
@@ -54,6 +54,7 @@ hyper = "0.14.23"
 itertools = "0.10.5"
 janus_core.workspace = true
 janus_messages.workspace = true
+janus_collector.workspace = true
 k8s-openapi.workspace = true
 kube.workspace = true
 lazy_static = { version = "1", optional = true }
@@ -64,7 +65,9 @@ opentelemetry-prometheus = { version = "0.11", optional = true }
 opentelemetry-semantic-conventions = { version = "0.10", optional = true }
 postgres-protocol = "0.6.4"
 postgres-types = { version = "0.2.4", features = ["derive", "array-impls"] }
-prio = { version = "0.10.0", features = ["multithreaded"] }
+# prio = { version = "0.10.0", features = ["multithreaded"] }
+# prio = {git = "https://github.com/dpsa-project/libprio-rs.git", branch ="release/0.10-hotfix-normvector-bugfix", features = ["multithreaded"]}
+prio = {git = "https://github.com/dpsa-project/libprio-rs.git", branch ="feature-simple-dp", features = ["multithreaded"]}
 prometheus = { version = "0.13.3", optional = true }
 rand = { version = "0.8", features = ["min_const_gen"] }
 reqwest = { version = "0.11.14", default-features = false, features = ["rustls-tls", "json"] }

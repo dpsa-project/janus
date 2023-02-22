@@ -10,6 +10,8 @@ pub mod messages;
 pub mod metrics;
 pub mod task;
 pub mod trace;
+#[cfg(feature = "fpvec_bounded_l2")]
+pub mod dpsa4fl;
 
 /// A secret byte array. This does not implement `Debug` or `Display`, to avoid accidental
 /// inclusion in logs.
