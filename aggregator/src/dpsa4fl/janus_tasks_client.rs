@@ -15,7 +15,7 @@ use janus_messages::{
     query_type::TimeInterval, Duration, HpkeAeadId, HpkeKdfId, HpkeKemId, Interval, Query, Role,
     TaskId, Time,
 };
-use prio::flp::types::fixedpoint_l2::{noise_parameter_no_noise, NoiseParameterType};
+use prio::flp::types::fixedpoint_l2::{NoiseParameterType, NOISE_PARAMETER_NO_NOISE};
 use prio::{codec::Encode, vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum};
 use rand::random;
 
@@ -201,37 +201,14 @@ impl JanusTasksClient {
             self.collector_auth_token.clone(),
             self.hpke_keypair.config().clone(),
             self.hpke_keypair.private_key().clone(),
-            // self.hpke_config.clone(),
-            // self.hpke_private_key.clone(),
         );
 
         let vdaf_collector =
             Prio3Aes128FixedPointBoundedL2VecSum::<Fx>::new_aes128_fixedpoint_boundedl2_vec_sum(
                 2,
                 self.num_gradient_entries,
-                noise_parameter_no_noise,
+                NOISE_PARAMETER_NO_NOISE,
             )?;
-
-        // we need to redirect urls returned by janus because janus gives us its
-        // internal domain, but we need the external one.
-        // let custom = redirect::Policy::custom(|attempt| {
-        // if attempt.url().host_str() == Some(self.location.internal_leader)
-        // {
-        //     attempt.url().
-        // }
-        // else
-        // {
-        //     attempt.follow()
-        // }
-        // if attempt.previous().len() > 5 {
-        //     attempt.error("too many redirects")
-        // } else if attempt.url().host_str() == Some("example.domain") {
-        //     // prevent redirects to 'example.domain'
-        //     attempt.stop()
-        // } else {
-        //     attempt.follow()
-        // }
-        // });
 
         let collector_http_client = reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
@@ -243,11 +220,6 @@ impl JanusTasksClient {
         let rounded_start = (start / TIME_PRECISION) * TIME_PRECISION;
         let real_start = Time::from_seconds_since_epoch(rounded_start - TIME_PRECISION * 5);
         let duration = Duration::from_seconds(TIME_PRECISION * 15);
-
-        // let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 60*5;
-        // let rounded_deadline = (deadline / TIME_PRECISION) * TIME_PRECISION;
-        // let start = Time::from_seconds_since_epoch(0);
-        // let duration = Duration::from_seconds(rounded_deadline);
 
         let aggregation_parameter = ();
 
@@ -274,8 +246,6 @@ impl JanusTasksClient {
                 port,
             )
             .await?;
-
-        // let result = collector_client.collect(Query::new(Interval::new(start, duration)?), &aggregation_parameter).await?;
 
         Ok(result)
     }

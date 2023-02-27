@@ -2674,7 +2674,7 @@ dependencies = [
 [[package]]
 name = "prio"
 version = "0.10.0"
-source = "git+https://github.com/dpsa-project/libprio-rs.git?branch=feature-simple-dp#105be44a8f88d3b20f7d561ce4413b46ceb463e3"
+source = "git+https://github.com/dpsa-project/libprio-rs.git?branch=feature-simple-dp#bf506a40930780f19a0a480264c2bb89d9aeea38"
 dependencies = [
  "aes",
  "base64 0.21.0",
