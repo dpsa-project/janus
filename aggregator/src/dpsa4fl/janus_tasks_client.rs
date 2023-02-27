@@ -4,16 +4,16 @@ use std::time::UNIX_EPOCH;
 use base64::{engine::general_purpose, Engine};
 // use base64::URL_SAFE_NO_PAD;
 use http::StatusCode;
-use janus_core::{hpke::{HpkePrivateKey, generate_hpke_config_and_private_key, HpkeKeypair}, task::AuthenticationToken};
-use janus_messages::{Role, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId, TaskId, Interval, Time, Duration, query_type::TimeInterval, Query};
+use janus_core::{hpke::{generate_hpke_config_and_private_key, HpkeKeypair}, task::AuthenticationToken};
+use janus_messages::{Role, HpkeKemId, HpkeKdfId, HpkeAeadId, TaskId, Interval, Time, Duration, query_type::TimeInterval, Query};
 use janus_collector::{Collector, CollectorParameters, Collection};
-use prio::{codec::{Encode, Decode, CodecError}, vdaf::prio3::{Prio3Aes128CountVec, Prio3Aes128FixedPointBoundedL2VecSum}};
+use prio::{codec::{Encode}, vdaf::prio3::{Prio3Aes128FixedPointBoundedL2VecSum}};
 use prio::flp::types::fixedpoint_l2::{noise_parameter_no_noise, NoiseParameterType};
-use anyhow::{anyhow, Context, Result, Error};
+use anyhow::{anyhow, Result};
 use rand::random;
-use fixed::types::extra::{U15, U31, U63};
-use fixed::{FixedI16, FixedI32, FixedI64};
-use url::Url;
+use fixed::types::extra::{U31};
+use fixed::{FixedI32};
+
 
 use crate::task::PRIO3_AES128_VERIFY_KEY_LENGTH;
 

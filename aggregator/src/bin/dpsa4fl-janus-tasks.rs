@@ -1,47 +1,41 @@
 
-use std::{path::Path, net::SocketAddr, time::{Instant, UNIX_EPOCH}, fmt::Display};
+use std::{net::SocketAddr, time::{Instant, UNIX_EPOCH}};
 
 use anyhow::{anyhow, Context, Result, Error};
 use base64::{engine::general_purpose, Engine};
 // use base64::URL_SAFE_NO_PAD;
-use janus_core::{time::{Clock, RealClock}, task::{AuthenticationToken, VdafInstance}, hpke::{HpkePrivateKey, HpkeKeypair}};
-use janus_aggregator::{datastore::{Datastore, self}, task::{Task, QueryType}, config::{CommonConfig, BinaryConfig}, binary_utils::{database_pool, datastore, CommonBinaryOptions, BinaryOptions, janus_main, job_driver::JobDriver, setup_signal_handler}, dpsa4fl::{core::{TrainingSessionId, HpkeConfigRegistry, CreateTrainingSessionRequest, CreateTrainingSessionResponse, StartRoundRequest, StartRoundResponse}, janus_tasks_client::TIME_PRECISION}, SecretBytes};
+use janus_core::{time::{Clock, RealClock}, task::{AuthenticationToken, VdafInstance}, hpke::{HpkeKeypair}};
+use janus_aggregator::{datastore::{Datastore, self}, task::{Task, QueryType}, config::{CommonConfig, BinaryConfig}, binary_utils::{CommonBinaryOptions, BinaryOptions, janus_main, setup_signal_handler}, dpsa4fl::{core::{TrainingSessionId, HpkeConfigRegistry, CreateTrainingSessionRequest, CreateTrainingSessionResponse, StartRoundRequest, StartRoundResponse}, janus_tasks_client::TIME_PRECISION}, SecretBytes};
 use http::{
-    header::{CACHE_CONTROL, CONTENT_TYPE, LOCATION},
     HeaderMap, StatusCode,
 };
 use janus_messages::{TaskId, HpkeConfig, Role, Time, Duration};
 use opentelemetry::metrics::{Unit, Meter, Histogram};
-use prio::codec::{Decode, Encode, CodecError};
+use prio::codec::{Decode};
 use prio::flp::types::fixedpoint_l2::NoiseParameterType;
 use rand::random;
 use serde_json::json;
-use tokio::fs;
+
 use tokio::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 use url::Url;
 use std::{
-    collections::BTreeMap,
-    path::PathBuf,
     sync::Arc,
 };
 use warp::{
     cors::Cors,
     filters::BoxedFilter,
-    reply::{self, Response},
+    reply::{Response},
     trace, Filter, Rejection, Reply,
 };
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap},
     convert::Infallible,
-    fmt,
     future::Future,
-    io::Cursor,
-    str::FromStr,
 };
 use clap::Parser;
-use tokio::select;
+
 
 
 //////////////////////////////////////////////////
@@ -57,13 +51,13 @@ async fn main() -> anyhow::Result<()> {
     );
 
     janus_main::<_, Options, Config, _, _>(RealClock::default(), |ctx| async move {
-        let meter = opentelemetry::global::meter("collect_job_driver");
+        let _meter = opentelemetry::global::meter("collect_job_driver");
         // let datastore = Arc::new(ctx.datastore);
 
         let shutdown_signal =
             setup_signal_handler().context("failed to register SIGTERM signal handler")?;
 
-        let (bound_address, server) = taskprovision_server(
+        let (_bound_address, server) = taskprovision_server(
             Arc::new(ctx.datastore),
             ctx.clock,
             ctx.config.listen_address,
@@ -345,7 +339,7 @@ pub struct TaskProvisioner<C: Clock>
 
 impl<C: Clock> TaskProvisioner<C>
 {
-    fn new(datastore: Arc<Datastore<C>>, clock: C, meter: Meter) -> Self
+    fn new(datastore: Arc<Datastore<C>>, clock: C, _meter: Meter) -> Self
     {
         // let upload_decrypt_failure_counter = meter
         //     .u64_counter("janus_upload_decrypt_failures")
@@ -602,11 +596,11 @@ where
     T: Reply,
 {
     move |filter| {
-        let response_time_histogram = response_time_histogram.clone();
+        let _response_time_histogram = response_time_histogram.clone();
         warp::any()
             .map(Instant::now)
             .and(filter)
-            .map(move |start: Instant, result: Result<T, Error>| {
+            .map(move |_start: Instant, result: Result<T, Error>| {
                 let error_code = if let Err(error) = &result {
                     warn!(?error, endpoint = name, "Error handling endpoint");
                     error.to_string()
@@ -625,7 +619,7 @@ where
 
                 match result {
                     Ok(reply) => reply.into_response(),
-                    Err(e) => {
+                    Err(_e) => {
                         build_problem_details_response(error_code, None)
                     }
 

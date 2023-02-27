@@ -5,8 +5,8 @@
 
 use std::{fmt::Display, io::Cursor, collections::HashMap};
 
-use janus_core::hpke::{HpkePrivateKey, generate_hpke_config_and_private_key, HpkeKeypair};
-use janus_messages::{HpkeConfigId, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId, Role, TaskId};
+use janus_core::hpke::{generate_hpke_config_and_private_key, HpkeKeypair};
+use janus_messages::{HpkeConfigId, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId, Role};
 use prio::codec::{Encode, Decode, CodecError};
 use prio::flp::types::fixedpoint_l2::NoiseParameterType;
 use rand::random;

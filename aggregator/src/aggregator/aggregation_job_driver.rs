@@ -33,7 +33,6 @@ use opentelemetry::{
 #[cfg(feature = "fpvec_bounded_l2")]
 use prio::vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum;
 use prio::{
-    flp::types::fixedpoint_l2::noise_parameter_no_noise,
     codec::{Decode, Encode, ParameterizedDecode},
     vdaf::{
         self,
