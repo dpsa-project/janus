@@ -2184,6 +2184,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-bigint"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f93ab6289c7b344a8a9f60f88d80aa20032336fe78da341afc91c8a2341fc75f"
+dependencies = [
+ "autocfg",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
 name = "num-integer"
 version = "0.1.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2663,7 +2674,7 @@ dependencies = [
 [[package]]
 name = "prio"
 version = "0.10.0"
-source = "git+https://github.com/dpsa-project/libprio-rs.git?branch=feature-simple-dp#f4b29a16625db260367219a85fe46b97d6afb7c7"
+source = "git+https://github.com/dpsa-project/libprio-rs.git?branch=feature-simple-dp#105be44a8f88d3b20f7d561ce4413b46ceb463e3"
 dependencies = [
  "aes",
  "base64 0.21.0",
@@ -2672,6 +2683,8 @@ dependencies = [
  "ctr",
  "fixed",
  "getrandom",
+ "num-bigint",
+ "num-traits",
  "rayon",
  "serde",
  "static_assertions",
