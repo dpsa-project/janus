@@ -1,24 +1,21 @@
-
-
 //////////////////////////////////////////////////
 // data structures:
 
-use std::{fmt::Display, io::Cursor, collections::HashMap};
+use std::{collections::HashMap, fmt::Display, io::Cursor};
 
 use janus_core::hpke::{generate_hpke_config_and_private_key, HpkeKeypair};
-use janus_messages::{HpkeConfigId, HpkeConfig, HpkeKemId, HpkeKdfId, HpkeAeadId, Role};
-use prio::codec::{Encode, Decode, CodecError};
+use janus_messages::{HpkeAeadId, HpkeConfig, HpkeConfigId, HpkeKdfId, HpkeKemId, Role};
+use prio::codec::{CodecError, Decode, Encode};
 use prio::flp::types::fixedpoint_l2::NoiseParameterType;
 use rand::random;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 /////////////////////////////
 // Locations
 
 #[derive(Clone)]
-pub struct Locations
-{
+pub struct Locations {
     pub internal_leader: Url, // TODO: This internal URL should probably be configured somewhere else, actually
     pub internal_helper: Url, // TODO: Same.
     pub external_leader_tasks: Url,
@@ -28,11 +25,12 @@ pub struct Locations
     // controller: Url, // the server that controls the learning process
 }
 
-impl Locations
-{
-    pub fn get_external_aggregator_endpoints(&self) -> Vec<Url>
-    {
-        vec![self.external_leader_main.clone(),self.external_helper_main.clone()]
+impl Locations {
+    pub fn get_external_aggregator_endpoints(&self) -> Vec<Url> {
+        vec![
+            self.external_leader_main.clone(),
+            self.external_helper_main.clone(),
+        ]
     }
 }
 
@@ -72,8 +70,6 @@ impl From<TrainingSessionId> for u16 {
         id.0
     }
 }
-
-
 
 /// This registry lazily generates up to 256 HPKE key pairs, one with each possible
 /// [`HpkeConfigId`].
@@ -117,8 +113,7 @@ impl HpkeConfigRegistry {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CreateTrainingSessionRequest
-{
+pub struct CreateTrainingSessionRequest {
     // id if known
     pub training_session_id: Option<TrainingSessionId>,
 
@@ -137,7 +132,7 @@ pub struct CreateTrainingSessionRequest
 
     // auth tokens
     pub collector_auth_token_encoded: String, // in unpadded base64url
-    pub leader_auth_token_encoded: String, // in unpadded base64url
+    pub leader_auth_token_encoded: String,    // in unpadded base64url
 
     // noise params
     pub noise_parameter: NoiseParameterType,
@@ -145,25 +140,21 @@ pub struct CreateTrainingSessionRequest
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CreateTrainingSessionResponse
-{
-    pub training_session_id: TrainingSessionId
+pub struct CreateTrainingSessionResponse {
+    pub training_session_id: TrainingSessionId,
 }
-
 
 //--- start training round ---
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct StartRoundRequest
-{
+pub struct StartRoundRequest {
     pub training_session_id: TrainingSessionId,
     pub task_id_encoded: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct StartRoundResponse
-{
+pub struct StartRoundResponse {
     // pub training_session_id: TrainingSessionId
 }

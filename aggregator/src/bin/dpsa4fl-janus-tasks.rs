@@ -1,42 +1,46 @@
+use std::{
+    net::SocketAddr,
+    time::{Instant, UNIX_EPOCH},
+};
 
-use std::{net::SocketAddr, time::{Instant, UNIX_EPOCH}};
-
-use anyhow::{anyhow, Context, Result, Error};
+use anyhow::{anyhow, Context, Error, Result};
 use base64::{engine::general_purpose, Engine};
 // use base64::URL_SAFE_NO_PAD;
-use janus_core::{time::{Clock, RealClock}, task::{AuthenticationToken, VdafInstance}, hpke::{HpkeKeypair}};
-use janus_aggregator::{datastore::{Datastore, self}, task::{Task, QueryType}, config::{CommonConfig, BinaryConfig}, binary_utils::{CommonBinaryOptions, BinaryOptions, janus_main, setup_signal_handler}, dpsa4fl::{core::{TrainingSessionId, HpkeConfigRegistry, CreateTrainingSessionRequest, CreateTrainingSessionResponse, StartRoundRequest, StartRoundResponse}, janus_tasks_client::TIME_PRECISION}, SecretBytes};
-use http::{
-    HeaderMap, StatusCode,
+use http::{HeaderMap, StatusCode};
+use janus_aggregator::{
+    binary_utils::{janus_main, setup_signal_handler, BinaryOptions, CommonBinaryOptions},
+    config::{BinaryConfig, CommonConfig},
+    datastore::{self, Datastore},
+    dpsa4fl::{
+        core::{
+            CreateTrainingSessionRequest, CreateTrainingSessionResponse, HpkeConfigRegistry,
+            StartRoundRequest, StartRoundResponse, TrainingSessionId,
+        },
+        janus_tasks_client::TIME_PRECISION,
+    },
+    task::{QueryType, Task},
+    SecretBytes,
 };
-use janus_messages::{TaskId, HpkeConfig, Role, Time, Duration};
-use opentelemetry::metrics::{Unit, Meter, Histogram};
-use prio::codec::{Decode};
+use janus_core::{
+    hpke::HpkeKeypair,
+    task::{AuthenticationToken, VdafInstance},
+    time::{Clock, RealClock},
+};
+use janus_messages::{Duration, HpkeConfig, Role, TaskId, Time};
+use opentelemetry::metrics::{Histogram, Meter, Unit};
+use prio::codec::Decode;
 use prio::flp::types::fixedpoint_l2::NoiseParameterType;
 use rand::random;
 use serde_json::json;
 
-use tokio::sync::Mutex;
+use clap::Parser;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use std::{collections::HashMap, convert::Infallible, future::Future};
+use tokio::sync::Mutex;
 use tracing::warn;
 use url::Url;
-use std::{
-    sync::Arc,
-};
-use warp::{
-    cors::Cors,
-    filters::BoxedFilter,
-    reply::{Response},
-    trace, Filter, Rejection, Reply,
-};
-use std::{
-    collections::{HashMap},
-    convert::Infallible,
-    future::Future,
-};
-use clap::Parser;
-
-
+use warp::{cors::Cors, filters::BoxedFilter, reply::Response, trace, Filter, Rejection, Reply};
 
 //////////////////////////////////////////////////
 // main:
@@ -67,7 +71,7 @@ async fn main() -> anyhow::Result<()> {
             //     .context("failed to parse response headers")?,
             shutdown_signal,
         )
-            .context("failed to create aggregator server")?;
+        .context("failed to create aggregator server")?;
         // info!(?bound_address, "Running aggregator");
         println!("Running taskprovision server");
 
@@ -75,7 +79,6 @@ async fn main() -> anyhow::Result<()> {
 
         println!("taskprovision server stopped");
         Ok(())
-
 
         // let collect_job_driver = Arc::new(CollectJobDriver::new(
         //     reqwest::Client::builder()
@@ -117,8 +120,6 @@ async fn main() -> anyhow::Result<()> {
     })
     .await
 }
-
-
 
 /// Construct a DAP aggregator server, listening on the provided [`SocketAddr`].
 /// If the `SocketAddr`'s `port` is 0, an ephemeral port is used. Returns a
@@ -188,7 +189,6 @@ pub fn taskprovision_filter<C: Clock>(
         "create_session",
     );
 
-
     //-------------------------------------------------------
     // start a training round
     let start_round_routing = warp::path("start_round");
@@ -198,21 +198,23 @@ pub fn taskprovision_filter<C: Clock>(
         .and(warp::body::json())
         .then(
             |aggregator: Arc<TaskProvisioner<C>>, request: StartRoundRequest| async move {
-
                 let result = aggregator.handle_start_round(request).await;
-                match result
-                {
-                    Ok(()) =>
-                    {
-                        let response = StartRoundResponse { };
-                        let response = warp::reply::with_status(warp::reply::json(&response), StatusCode::OK).into_response();
+                match result {
+                    Ok(()) => {
+                        let response = StartRoundResponse {};
+                        let response =
+                            warp::reply::with_status(warp::reply::json(&response), StatusCode::OK)
+                                .into_response();
                         Ok(response)
-                    },
-                    Err(err) =>
-                    {
-                        let response = warp::reply::with_status(warp::reply::json(&err.to_string()), StatusCode::BAD_REQUEST).into_response();
+                    }
+                    Err(err) => {
+                        let response = warp::reply::with_status(
+                            warp::reply::json(&err.to_string()),
+                            StatusCode::BAD_REQUEST,
+                        )
+                        .into_response();
                         Ok(response)
-                    },
+                    }
                 }
             },
         );
@@ -229,18 +231,15 @@ pub fn taskprovision_filter<C: Clock>(
     );
 
     Ok(start_round_endpoint
-       .or(create_session_endpoint)
-       // .or(upload_endpoint)
-       // .or(aggregate_endpoint)
-       // .or(collect_endpoint)
-       // .or(collect_jobs_get_endpoint)
-       // .or(collect_jobs_delete_endpoint)
-       // .or(aggregate_share_endpoint)
-       .boxed())
+        .or(create_session_endpoint)
+        // .or(upload_endpoint)
+        // .or(aggregate_endpoint)
+        // .or(collect_endpoint)
+        // .or(collect_jobs_get_endpoint)
+        // .or(collect_jobs_delete_endpoint)
+        // .or(aggregate_share_endpoint)
+        .boxed())
 }
-
-
-
 
 //////////////////////////////////////////////////
 // options:
@@ -263,7 +262,6 @@ impl BinaryOptions for Options {
     }
 }
 
-
 //////////////////////////////////////////////////
 // config:
 
@@ -273,7 +271,6 @@ struct Config {
     common_config: CommonConfig,
     // #[serde(flatten)]
     // job_driver_config: JobDriverConfig,
-
     /// Address on which this server should listen for connections and serve its
     /// API endpoints.
     // TODO(#232): options for terminating TLS, unless that gets handled in a load balancer?
@@ -290,13 +287,10 @@ impl BinaryConfig for Config {
     }
 }
 
-
 //////////////////////////////////////////////////
 // self:
 
-
-struct TrainingSession
-{
+struct TrainingSession {
     // endpoints
     leader_endpoint: Url,
     helper_endpoint: Url,
@@ -321,15 +315,13 @@ struct TrainingSession
     noise_parameter: NoiseParameterType,
 }
 
-pub struct TaskProvisioner<C: Clock>
-{
+pub struct TaskProvisioner<C: Clock> {
     /// Datastore used for durable storage.
     datastore: Arc<Datastore<C>>,
     /// Clock used to sample time.
     clock: C,
     // Cache of task aggregators.
     // task_aggregators: Mutex<HashMap<TaskId, Arc<TaskAggregator>>>,
-
     /// Currently active training runs.
     training_sessions: Mutex<HashMap<TrainingSessionId, Arc<TrainingSession>>>,
 
@@ -337,10 +329,8 @@ pub struct TaskProvisioner<C: Clock>
     keyring: Mutex<HpkeConfigRegistry>,
 }
 
-impl<C: Clock> TaskProvisioner<C>
-{
-    fn new(datastore: Arc<Datastore<C>>, clock: C, _meter: Meter) -> Self
-    {
+impl<C: Clock> TaskProvisioner<C> {
+    fn new(datastore: Arc<Datastore<C>>, clock: C, _meter: Meter) -> Self {
         // let upload_decrypt_failure_counter = meter
         //     .u64_counter("janus_upload_decrypt_failures")
         //     .with_description("Number of decryption failures in the /upload endpoint.")
@@ -360,8 +350,7 @@ impl<C: Clock> TaskProvisioner<C>
         }
     }
 
-    async fn handle_start_round(&self, request: StartRoundRequest) -> Result<(), Error>
-    {
+    async fn handle_start_round(&self, request: StartRoundRequest) -> Result<(), Error> {
         //---------------------- decode parameters --------------------------
         // session id
         // let training_session_id = training_session_id.ok_or(anyhow!("training_session_id parameter not given."))?;
@@ -369,48 +358,52 @@ impl<C: Clock> TaskProvisioner<C>
 
         // get training session with this id
         let training_sessions_lock = self.training_sessions.lock().await;
-        let training_session = training_sessions_lock.get(&training_session_id)
-            .ok_or(anyhow!("There is no training session with id {}", &training_session_id))?;
+        let training_session = training_sessions_lock
+            .get(&training_session_id)
+            .ok_or(anyhow!(
+                "There is no training session with id {}",
+                &training_session_id
+            ))?;
 
         // task id
         // let task_id_base64 = task_id_base64.ok_or(anyhow!("task_id parameter not given"))?;
 
         let task_id_bytes = general_purpose::URL_SAFE_NO_PAD.decode(request.task_id_encoded)?;
-            // base64::decode_config(request.task_id_encoded, base64::URL_SAFE_NO_PAD)?;
+        // base64::decode_config(request.task_id_encoded, base64::URL_SAFE_NO_PAD)?;
         let task_id = TaskId::get_decoded(&task_id_bytes)?;
 
-
-
-
         // -------------------- create new task -----------------------------
-        let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 10*60;
+        let deadline = UNIX_EPOCH.elapsed()?.as_secs() + 10 * 60;
 
-        let collector_auth_tokens = if training_session.role == Role::Leader
-        {
+        let collector_auth_tokens = if training_session.role == Role::Leader {
             vec![training_session.collector_auth_token.clone()]
-        }
-        else
-        {
+        } else {
             Vec::new()
         };
 
         let task = Task::new(
             task_id,
-            vec![training_session.leader_endpoint.clone(), training_session.helper_endpoint.clone()] ,
+            vec![
+                training_session.leader_endpoint.clone(),
+                training_session.helper_endpoint.clone(),
+            ],
             QueryType::TimeInterval,
             // QueryType::FixedSize { max_batch_size: u64::MAX },
-            VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { length: training_session.num_gradient_entries, noise_param: training_session.noise_parameter },
+            VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum {
+                length: training_session.num_gradient_entries,
+                noise_param: training_session.noise_parameter,
+            },
             training_session.role,
             vec![training_session.verify_key.clone()],
-            10, // max_batch_query_count
+            10,                                       // max_batch_query_count
             Time::from_seconds_since_epoch(deadline), // task_expiration
-            None, // report_expiry_age
-            2, // min_batch_size
-            Duration::from_seconds(TIME_PRECISION), // time_precision
-            Duration::from_seconds(1000), // tolerable_clock_skew,
+            None,                                     // report_expiry_age
+            2,                                        // min_batch_size
+            Duration::from_seconds(TIME_PRECISION),   // time_precision
+            Duration::from_seconds(1000),             // tolerable_clock_skew,
             training_session.collector_hpke_config.clone(),
             vec![training_session.leader_auth_token.clone()], // leader auth tokens
-            collector_auth_tokens, // collector auth tokens
+            collector_auth_tokens,                            // collector auth tokens
             [training_session.hpke_config_and_key.clone()],
         )?;
 
@@ -419,9 +412,10 @@ impl<C: Clock> TaskProvisioner<C>
         Ok(())
     }
 
-    async fn handle_create_session(&self, request: CreateTrainingSessionRequest) -> Result<TrainingSessionId>
-    {
-
+    async fn handle_create_session(
+        &self,
+        request: CreateTrainingSessionRequest,
+    ) -> Result<TrainingSessionId> {
         // decode fields
         let CreateTrainingSessionRequest {
             training_session_id,
@@ -438,24 +432,25 @@ impl<C: Clock> TaskProvisioner<C>
 
         // prepare id
         // (take requested id if exists, else generate new one)
-        let training_session_id = if let Some(id) = training_session_id
-        {
-            if self.training_sessions.lock().await.contains_key(&id)
-            {
-                return Err(anyhow!("There already exists a training session with id {id}."));
+        let training_session_id = if let Some(id) = training_session_id {
+            if self.training_sessions.lock().await.contains_key(&id) {
+                return Err(anyhow!(
+                    "There already exists a training session with id {id}."
+                ));
             }
             id
-        } else
-        {
+        } else {
             let id: u16 = random();
             id.into()
         };
 
-        let collector_auth_token = AuthenticationToken::from(collector_auth_token_encoded.into_bytes());
+        let collector_auth_token =
+            AuthenticationToken::from(collector_auth_token_encoded.into_bytes());
         let leader_auth_token = AuthenticationToken::from(leader_auth_token_encoded.into_bytes());
         let verify_key = SecretBytes::new(
-            general_purpose::URL_SAFE_NO_PAD.decode(verify_key_encoded)
-            // base64::decode_config(verify_key_encoded, URL_SAFE_NO_PAD)
+            general_purpose::URL_SAFE_NO_PAD
+                .decode(verify_key_encoded)
+                // base64::decode_config(verify_key_encoded, URL_SAFE_NO_PAD)
                 .context("invalid base64url content in \"verifyKey\"")?,
         );
 
@@ -486,10 +481,8 @@ impl<C: Clock> TaskProvisioner<C>
     }
 }
 
-
 //////////////////////////////////////////////////
 // code:
-
 
 async fn provision_tasks<C: Clock>(datastore: &Datastore<C>, tasks: Vec<Task>) -> Result<()> {
     // Write all tasks requested.
@@ -538,7 +531,6 @@ where
     warp::any().map(move || value.clone())
 }
 
-
 /// Convenience function to perform common composition of Warp filters for a single endpoint. A
 /// combined filter is returned, with a CORS handler, instrumented to measure both request
 /// processing time and successes or failures for metrics, and with per-route named tracing spans.
@@ -583,7 +575,6 @@ where
         .boxed()
 }
 
-
 /// Produces a closure that will transform applicable errors into a problem details JSON object
 /// (see RFC 7807) and update a metrics counter tracking the error status of the result as well as
 /// timing information. The returned closure is meant to be used in a warp `with` filter.
@@ -619,10 +610,7 @@ where
 
                 match result {
                     Ok(reply) => reply.into_response(),
-                    Err(_e) => {
-                        build_problem_details_response(error_code, None)
-                    }
-
+                    Err(_e) => build_problem_details_response(error_code, None),
                 }
                 //     Err(Error::InvalidConfiguration(_)) => {
                 //         StatusCode::INTERNAL_SERVER_ERROR.into_response()

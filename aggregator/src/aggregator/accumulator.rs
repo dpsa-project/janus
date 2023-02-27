@@ -72,8 +72,8 @@ where
     /// Applies the postprocessing function to all aggregate shares. This is special
     /// dpsa-project functionality and not part of the original janus code.
     pub fn postprocess(&mut self, vdaf: &A) -> Result<(), anyhow::Error> {
-        for (_ , accumulation) in &mut self.accumulations {
-                vdaf.postprocess(&self.aggregation_param, &mut accumulation.aggregate_share)?;
+        for (_, accumulation) in &mut self.accumulations {
+            vdaf.postprocess(&self.aggregation_param, &mut accumulation.aggregate_share)?;
         }
         Ok(())
     }

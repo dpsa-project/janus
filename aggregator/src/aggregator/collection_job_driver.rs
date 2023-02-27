@@ -304,7 +304,6 @@ impl CollectionJobDriver {
                 .await
                 .map_err(|e| datastore::Error::User(e.into()))?;
 
-
         println!("sending aggregate share to helper!");
         // Send an aggregate share request to the helper.
         let req = AggregateShareReq::<Q>::new(

@@ -433,11 +433,7 @@ impl<C: Clock> Aggregator<C> {
         }
         let auth_token = auth_token.map(|t| AuthenticationToken::from(t.into_bytes()));
         if !auth_token
-            .map(|t| {
-                task_aggregator
-                    .task
-                    .check_aggregator_auth_token(&t)
-            })
+            .map(|t| task_aggregator.task.check_aggregator_auth_token(&t))
             .unwrap_or(false)
         {
             return Err(Error::UnauthorizedRequest(*task_id));
@@ -678,7 +674,10 @@ impl<C: Clock> TaskAggregator<C> {
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { length, noise_param } => {
+            VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum {
+                length,
+                noise_param,
+            } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>> =
                     Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, *noise_param)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
@@ -686,7 +685,10 @@ impl<C: Clock> TaskAggregator<C> {
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { length, noise_param } => {
+            VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum {
+                length,
+                noise_param,
+            } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
                     Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, *noise_param)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
@@ -694,7 +696,10 @@ impl<C: Clock> TaskAggregator<C> {
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { length, noise_param } => {
+            VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum {
+                length,
+                noise_param,
+            } => {
                 let vdaf: Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>> =
                     Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, *length, *noise_param)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
