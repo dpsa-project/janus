@@ -73,7 +73,9 @@ where
     /// dpsa-project functionality and not part of the original janus code.
     pub fn postprocess(&mut self, vdaf: &A) -> Result<(), anyhow::Error> {
         for (_, accumulation) in &mut self.accumulations {
+            println!("before postprocess: {:?}", accumulation.aggregate_share);
             vdaf.postprocess(&self.aggregation_param, &mut accumulation.aggregate_share)?;
+            println!("after postprocess: {:?}", accumulation.aggregate_share);
         }
         Ok(())
     }
