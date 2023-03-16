@@ -73,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
         )
         .context("failed to create aggregator server")?;
         // info!(?bound_address, "Running aggregator");
-        println!("Running taskprovision server");
+        println!("Running taskprovision server (2023-03-16)");
 
         server.await;
 
