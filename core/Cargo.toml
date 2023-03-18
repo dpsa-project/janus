@@ -14,7 +14,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-fpvec_bounded_l2 = []
+fpvec_bounded_l2 = ["dep:fixed"]
 test-util = [
     "dep:assert_matches",
     "dep:lazy_static",
@@ -35,6 +35,7 @@ base64 = "0.21.0"
 chrono = "0.4"
 derivative = "2.2.0"
 futures = "0.3.26"
+fixed = { version = "1.23", optional = true, features = ["serde"] }
 hex = "0.4"
 hpke-dispatch = "0.5.0"
 http-api-problem = "0.56.0"

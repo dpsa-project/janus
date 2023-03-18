@@ -16,7 +16,7 @@ use janus_aggregator::{
             CreateTrainingSessionRequest, CreateTrainingSessionResponse, HpkeConfigRegistry,
             StartRoundRequest, StartRoundResponse, TrainingSessionId,
         },
-        janus_tasks_client::TIME_PRECISION,
+        janus_tasks_client::{Fx, TIME_PRECISION},
     },
     task::{QueryType, Task},
     SecretBytes,
@@ -29,7 +29,6 @@ use janus_core::{
 use janus_messages::{Duration, HpkeConfig, Role, TaskId, Time};
 use opentelemetry::metrics::{Histogram, Meter, Unit};
 use prio::codec::Decode;
-use prio::flp::types::fixedpoint_l2::NoiseParameterType;
 use rand::random;
 use serde_json::json;
 
@@ -159,7 +158,7 @@ pub fn taskprovision_filter<C: Clock>(
         // .and(warp::query::<HashMap<String, String>>())
         .and(warp::body::json())
         .then(
-            |aggregator: Arc<TaskProvisioner<C>>, request: CreateTrainingSessionRequest| async move {
+            |aggregator: Arc<TaskProvisioner<C>>, request: CreateTrainingSessionRequest<Fx>| async move {
                 let result = aggregator.handle_create_session(request).await;
                 match result
                 {
@@ -312,7 +311,7 @@ struct TrainingSession {
     hpke_config_and_key: HpkeKeypair,
 
     // noise param
-    noise_parameter: NoiseParameterType,
+    noise_parameter: Fx,
 }
 
 pub struct TaskProvisioner<C: Clock> {
@@ -414,7 +413,7 @@ impl<C: Clock> TaskProvisioner<C> {
 
     async fn handle_create_session(
         &self,
-        request: CreateTrainingSessionRequest,
+        request: CreateTrainingSessionRequest<Fx>,
     ) -> Result<TrainingSessionId> {
         // decode fields
         let CreateTrainingSessionRequest {

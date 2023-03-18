@@ -15,7 +15,6 @@ use janus_messages::{
     query_type::TimeInterval, Duration, HpkeAeadId, HpkeKdfId, HpkeKemId, Interval, Query, Role,
     TaskId, Time,
 };
-use prio::flp::types::fixedpoint_l2::{NoiseParameterType, NOISE_PARAMETER_NO_NOISE};
 use prio::{codec::Encode, vdaf::prio3::Prio3Aes128FixedPointBoundedL2VecSum};
 use rand::random;
 
@@ -38,14 +37,14 @@ pub struct JanusTasksClient {
     // hpke_private_key: HpkePrivateKey,
     leader_auth_token: AuthenticationToken,
     collector_auth_token: AuthenticationToken,
-    noise_parameter: NoiseParameterType,
+    noise_parameter: Fx,
 }
 
 impl JanusTasksClient {
     pub fn new(
         location: Locations,
         num_gradient_entries: usize,
-        noise_parameter: NoiseParameterType,
+        noise_parameter: Fx,
     ) -> Self {
         let leader_auth_token = rand::random::<[u8; 16]>().to_vec().into();
         let collector_auth_token = rand::random::<[u8; 16]>().to_vec().into();
@@ -114,7 +113,7 @@ impl JanusTasksClient {
                 response
             }
             res => {
-                return Err(anyhow!("Got error from leader: {res}"));
+                return Err(anyhow!("Got error from leaderiiiiiii: {res}"));
             }
         };
 
@@ -207,7 +206,7 @@ impl JanusTasksClient {
             Prio3Aes128FixedPointBoundedL2VecSum::<Fx>::new_aes128_fixedpoint_boundedl2_vec_sum(
                 2,
                 self.num_gradient_entries,
-                NOISE_PARAMETER_NO_NOISE,
+                Fx::ZERO,
             )?;
 
         let collector_http_client = reqwest::Client::builder()

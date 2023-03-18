@@ -3,10 +3,10 @@
 
 use std::{collections::HashMap, fmt::Display, io::Cursor};
 
+use fixed::traits::Fixed;
 use janus_core::hpke::{generate_hpke_config_and_private_key, HpkeKeypair};
 use janus_messages::{HpkeAeadId, HpkeConfig, HpkeConfigId, HpkeKdfId, HpkeKemId, Role};
 use prio::codec::{CodecError, Decode, Encode};
-use prio::flp::types::fixedpoint_l2::NoiseParameterType;
 use rand::random;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -113,7 +113,7 @@ impl HpkeConfigRegistry {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CreateTrainingSessionRequest {
+pub struct CreateTrainingSessionRequest<Fx: Fixed> {
     // id if known
     pub training_session_id: Option<TrainingSessionId>,
 
@@ -135,7 +135,8 @@ pub struct CreateTrainingSessionRequest {
     pub leader_auth_token_encoded: String,    // in unpadded base64url
 
     // noise params
-    pub noise_parameter: NoiseParameterType,
+    #[serde(deserialize_with = "Fx::deserialize")]
+    pub noise_parameter: Fx,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

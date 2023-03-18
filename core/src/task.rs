@@ -3,7 +3,8 @@ use rand::{distributions::Standard, prelude::Distribution};
 use reqwest::Url;
 use ring::constant_time;
 use serde::{Deserialize, Serialize};
-use prio::flp::types::fixedpoint_l2::NoiseParameterType;
+use fixed::types::extra::{U15, U31, U63};
+use fixed::{FixedI16, FixedI32, FixedI64};
 
 /// HTTP header where auth tokens are provided in messages between participants.
 pub const DAP_AUTH_HEADER: &str = "DAP-Auth-Token";
@@ -29,15 +30,15 @@ pub enum VdafInstance {
     /// A `prio3` 16-bit fixedpoint vector sum with bounded L2 norm using the AES
     /// 128 pseudorandom generator.
     #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3Aes128FixedPoint16BitBoundedL2VecSum { length: usize, noise_param: NoiseParameterType },
+    Prio3Aes128FixedPoint16BitBoundedL2VecSum { length: usize, noise_param: FixedI16<U15> },
     /// A `prio3` 32-bit fixedpoint vector sum with bounded L2 norm using the AES
     /// 128 pseudorandom generator.
     #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3Aes128FixedPoint32BitBoundedL2VecSum { length: usize, noise_param: NoiseParameterType },
+    Prio3Aes128FixedPoint32BitBoundedL2VecSum { length: usize, noise_param: FixedI32<U31> },
     /// A `prio3` 64-bit fixedpoint vector sum with bounded L2 norm using the AES
     /// 128 pseudorandom generator.
     #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3Aes128FixedPoint64BitBoundedL2VecSum { length: usize, noise_param: NoiseParameterType },
+    Prio3Aes128FixedPoint64BitBoundedL2VecSum { length: usize, noise_param: FixedI64<U63> },
     /// The `poplar1` VDAF. Support for this VDAF is experimental.
     Poplar1 { bits: usize },
 
