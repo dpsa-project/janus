@@ -1,6 +1,7 @@
 FROM rust:1.67.1-alpine as builder
 ARG BINARY=aggregator
 ARG GIT_REVISION=unknown
+ARG CONFIG
 RUN apk add libc-dev protobuf-dev protoc
 WORKDIR /src
 COPY Cargo.toml /src/Cargo.toml
@@ -26,4 +27,6 @@ COPY --from=builder /$BINARY /$BINARY
 # Store the build argument in an environment variable so we can reference it
 # from the ENTRYPOINT at runtime.
 ENV BINARY=$BINARY
-ENTRYPOINT ["/bin/sh", "-c", "exec /$BINARY \"$0\" \"$@\""]
+ENV CONFIG=$CONFIG
+ENTRYPOINT ["/bin/sh", "-c", "exec /$BINARY --config-file $CONFIG --datastore-keys vWoEFA7F+ojcF+HohGLn/Q"]
+# ENTRYPOINT ["/bin/sh", "-c", "exec /$BINARY \"$0\" \"$@\""]
