@@ -6,8 +6,6 @@ pub mod binary_utils;
 pub mod config;
 #[macro_use]
 pub mod datastore;
-#[cfg(feature = "fpvec_bounded_l2")]
-pub mod dpsa4fl;
 pub mod messages;
 pub mod metrics;
 pub mod task;
