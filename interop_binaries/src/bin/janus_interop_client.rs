@@ -237,32 +237,44 @@ async fn handle_upload(
         }
 
         #[cfg(feature = "fpvec_bounded_l2")]
-        VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum { length } => {
+        VdafInstance::Prio3Aes128FixedPoint16BitBoundedL2VecSum {
+            length,
+            noise_parameter,
+        } => {
             let measurement = request.measurement.as_fixed16_vec()?;
             let vdaf_client: Prio3Aes128FixedPointBoundedL2VecSum<FixedI16<U15>> =
-                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, length).context(
-                    "failed to construct Prio3Aes128FixedPoint16BitBoundedL2VecSum VDAF",
-                )?;
+                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, length, noise_parameter)
+                    .context(
+                        "failed to construct Prio3Aes128FixedPoint16BitBoundedL2VecSum VDAF",
+                    )?;
             handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
         }
 
         #[cfg(feature = "fpvec_bounded_l2")]
-        VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum { length } => {
+        VdafInstance::Prio3Aes128FixedPoint32BitBoundedL2VecSum {
+            length,
+            noise_parameter,
+        } => {
             let measurement = request.measurement.as_fixed32_vec()?;
             let vdaf_client: Prio3Aes128FixedPointBoundedL2VecSum<FixedI32<U31>> =
-                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, length).context(
-                    "failed to construct Prio3Aes128FixedPoint32BitBoundedL2VecSum VDAF",
-                )?;
+                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, length, noise_parameter)
+                    .context(
+                        "failed to construct Prio3Aes128FixedPoint32BitBoundedL2VecSum VDAF",
+                    )?;
             handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
         }
 
         #[cfg(feature = "fpvec_bounded_l2")]
-        VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum { length } => {
+        VdafInstance::Prio3Aes128FixedPoint64BitBoundedL2VecSum {
+            length,
+            noise_parameter,
+        } => {
             let measurement = request.measurement.as_fixed64_vec()?;
             let vdaf_client: Prio3Aes128FixedPointBoundedL2VecSum<FixedI64<U63>> =
-                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, length).context(
-                    "failed to construct Prio3Aes128FixedPoint64BitBoundedL2VecSum VDAF",
-                )?;
+                Prio3::new_aes128_fixedpoint_boundedl2_vec_sum(2, length, noise_parameter)
+                    .context(
+                        "failed to construct Prio3Aes128FixedPoint64BitBoundedL2VecSum VDAF",
+                    )?;
             handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
         }
         _ => panic!("Unsupported VDAF: {vdaf_instance:?}"),

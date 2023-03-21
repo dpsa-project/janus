@@ -404,8 +404,9 @@ where
                     .body(collect_request.get_encoded());
                 match &self.parameters.authentication {
                     Authentication::DapAuthToken(token) => {
-                        let encoded_auth_token = general_purpose::URL_SAFE_NO_PAD.encode(token.as_bytes());
-                            // base64::encode_config(token.as_bytes(), URL_SAFE_NO_PAD);
+                        let encoded_auth_token =
+                            general_purpose::URL_SAFE_NO_PAD.encode(token.as_bytes());
+                        // base64::encode_config(token.as_bytes(), URL_SAFE_NO_PAD);
                         request = request.header(DAP_AUTH_HEADER, encoded_auth_token)
                     }
                 }
@@ -454,7 +455,8 @@ where
                 let mut request = self.http_client.post(job.collection_job_url.clone());
                 match &self.parameters.authentication {
                     Authentication::DapAuthToken(token) => {
-                        let encoded_auth_token = general_purpose::URL_SAFE_NO_PAD.encode(token.as_bytes());
+                        let encoded_auth_token =
+                            general_purpose::URL_SAFE_NO_PAD.encode(token.as_bytes());
                         request = request.header(DAP_AUTH_HEADER, encoded_auth_token)
                     }
                 }
@@ -627,9 +629,7 @@ where
     where
         for<'a> Vec<u8>: From<&'a <V as vdaf::Vdaf>::AggregateShare>,
     {
-        let mut job = self
-            .start_collection(query, aggregation_parameter)
-            .await?;
+        let mut job = self.start_collection(query, aggregation_parameter).await?;
         job.collection_job_url.set_host(Some(host))?;
         job.collection_job_url.set_port(Some(port)).unwrap();
         self.poll_until_complete(&job).await
