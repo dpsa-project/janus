@@ -2,7 +2,7 @@ FROM rust:1.67.1-alpine as builder
 ARG BINARY=aggregator
 ARG GIT_REVISION=unknown
 ARG CONFIG
-RUN apk add libc-dev protobuf-dev protoc
+RUN apk add libc-dev protobuf-dev protoc git
 WORKDIR /src
 COPY Cargo.toml /src/Cargo.toml
 COPY Cargo.lock /src/Cargo.lock
