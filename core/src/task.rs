@@ -1,4 +1,5 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use prio::flp::types::fixedpoint_l2::PrivacyParameterType;
 use rand::{distributions::Standard, prelude::Distribution};
 use reqwest::Url;
 use ring::constant_time;
@@ -30,15 +31,15 @@ pub enum VdafInstance {
     /// A `prio3` 16-bit fixedpoint vector sum with bounded L2 norm using the AES
     /// 128 pseudorandom generator.
     #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3Aes128FixedPoint16BitBoundedL2VecSum { length: usize, noise_param: FixedI16<U15> },
+    Prio3Aes128FixedPoint16BitBoundedL2VecSum { length: usize, noise_param: PrivacyParameterType },
     /// A `prio3` 32-bit fixedpoint vector sum with bounded L2 norm using the AES
     /// 128 pseudorandom generator.
     #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3Aes128FixedPoint32BitBoundedL2VecSum { length: usize, noise_param: FixedI32<U31> },
+    Prio3Aes128FixedPoint32BitBoundedL2VecSum { length: usize, noise_param: PrivacyParameterType },
     /// A `prio3` 64-bit fixedpoint vector sum with bounded L2 norm using the AES
     /// 128 pseudorandom generator.
     #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3Aes128FixedPoint64BitBoundedL2VecSum { length: usize, noise_param: FixedI64<U63> },
+    Prio3Aes128FixedPoint64BitBoundedL2VecSum { length: usize, noise_param: PrivacyParameterType },
     /// The `poplar1` VDAF. Support for this VDAF is experimental.
     Poplar1 { bits: usize },
 
