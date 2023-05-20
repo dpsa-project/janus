@@ -268,12 +268,16 @@ impl<C: Clock> Aggregator<C> {
         if task_aggregator.task.role() != &Role::Helper {
             return Err(Error::UnrecognizedTask(*task_id));
         }
+        println!("Got auth token: {:?}", auth_token.clone().map(|a| a.as_ref().to_vec()));
         if !auth_token
             .map(|t| task_aggregator.task.check_aggregator_auth_token(&t))
             .unwrap_or(false)
         {
+            println!("But token not valid?");
             return Err(Error::UnauthorizedRequest(*task_id));
         }
+
+        println!("Token valid!");
 
         task_aggregator
             .handle_aggregate_init(
