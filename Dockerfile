@@ -39,14 +39,16 @@ COPY tools /src/tools
 ARG BINARY=aggregator
 ARG GIT_REVISION=unknown
 ENV GIT_REVISION ${GIT_REVISION}
-RUN cargo build --release -p janus_aggregator --bin $BINARY --features=prometheus
+RUN cargo build --release -p janus_aggregator --bin $BINARY --features=prometheus,fpvec_bounded_l2
 
 FROM alpine:3.18.0 AS final
 ARG BINARY=aggregator
 ARG GIT_REVISION=unknown
+ARG CONFIG
 LABEL revision ${GIT_REVISION}
 COPY --from=builder /src/target/release/$BINARY /$BINARY
 # Store the build argument in an environment variable so we can reference it
 # from the ENTRYPOINT at runtime.
 ENV BINARY=$BINARY
-ENTRYPOINT ["/bin/sh", "-c", "exec /$BINARY \"$0\" \"$@\""]
+ENV CONFIG=$CONFIG
+ENTRYPOINT ["/bin/sh", "-c", "exec /$BINARY  --config-file $CONFIG --datastore-keys vWoEFA7F+ojcF+HohGLn/Q"]
