@@ -565,7 +565,7 @@ pub enum AuthenticationToken {
     /// [2]: https://datatracker.ietf.org/doc/html/draft-dcook-ppm-dap-interop-test-design-03#section-4.3.3
     /// [3]: https://datatracker.ietf.org/doc/html/draft-dcook-ppm-dap-interop-test-design-03#section-4.4.2
     /// [4]: https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-01#name-https-sender-authentication
-    pub DapAuth(DapAuthToken),
+    DapAuth(DapAuthToken),
 }
 
 impl AuthenticationToken {
