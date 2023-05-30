@@ -663,6 +663,10 @@ impl AggregationJobDriver {
             report_aggregations_to_write.push(report_aggregation.with_state(new_state));
         }
 
+        // This is special dpsa-project functionality. We postprocess the the aggregate shares,
+        // i.e., we add noise for differential privacy.
+        accumulator.postprocess(&vdaf)?;
+
         // Write everything back to storage.
         let mut aggregation_job_writer = AggregationJobWriter::new(Arc::clone(&task));
         let new_round = aggregation_job.round().increment();
