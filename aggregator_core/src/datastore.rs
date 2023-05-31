@@ -5153,6 +5153,7 @@ pub mod models {
 
         pub fn postprocess(&mut self, vdaf: &A) -> Result<(), anyhow::Error> {
             if let Some(aggregate_share) = &mut self.aggregate_share {
+                println!("adding privacy (3)");
                 vdaf.postprocess(&self.aggregation_parameter, aggregate_share)?
             }
             Ok(())
