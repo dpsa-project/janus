@@ -21,8 +21,9 @@ COPY tools /src/tools
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
+ARG FEATURES=
 COPY --from=planner /src/recipe.json /src/recipe.json
-RUN cargo chef cook --release -p janus_aggregator --features=prometheus
+RUN cargo chef cook --release -p janus_aggregator --features=prometheus,$FEATURES
 COPY Cargo.toml Cargo.lock /src/
 COPY aggregator /src/aggregator
 COPY aggregator_api /src/aggregator_api
@@ -39,16 +40,14 @@ COPY tools /src/tools
 ARG BINARY=aggregator
 ARG GIT_REVISION=unknown
 ENV GIT_REVISION ${GIT_REVISION}
-RUN cargo build --release -p janus_aggregator --bin $BINARY --features=prometheus,fpvec_bounded_l2
+RUN cargo build --release -p janus_aggregator --bin $BINARY --features=prometheus,$FEATURES
 
 FROM alpine:3.18.0 AS final
 ARG BINARY=aggregator
 ARG GIT_REVISION=unknown
-ARG CONFIG
 LABEL revision ${GIT_REVISION}
 COPY --from=builder /src/target/release/$BINARY /$BINARY
 # Store the build argument in an environment variable so we can reference it
 # from the ENTRYPOINT at runtime.
 ENV BINARY=$BINARY
-ENV CONFIG=$CONFIG
 ENTRYPOINT ["/bin/sh", "-c", "exec /$BINARY \"$0\" \"$@\""]
