@@ -199,6 +199,10 @@ impl VdafOps {
             }
         }
 
+        // This is special dpsa-project functionality. We postprocess the aggregate shares,
+        // i.e., we add noise for differential privacy.
+        accumulator.postprocess(&vdaf).unwrap();
+
         // Write accumulated aggregation values back to the datastore; mark any reports that can't
         // be aggregated because the batch is collected with error BatchCollected.
         let unwritable_reports = accumulator.flush_to_datastore(tx, &vdaf).await?;
