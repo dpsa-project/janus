@@ -663,9 +663,9 @@ impl AggregationJobDriver {
             report_aggregations_to_write.push(report_aggregation.with_state(new_state));
         }
 
-        println!("adding privacy!");
         // This is special dpsa-project functionality. We postprocess the the aggregate shares,
         // i.e., we add noise for differential privacy.
+        #[cfg(feature = "experimental")]
         accumulator.postprocess(&vdaf)?;
 
         // Write everything back to storage.

@@ -201,6 +201,7 @@ impl VdafOps {
 
         // This is special dpsa-project functionality. We postprocess the aggregate shares,
         // i.e., we add noise for differential privacy.
+        #[cfg(feature = "experimental")]
         accumulator.postprocess(&vdaf).unwrap();
 
         // Write accumulated aggregation values back to the datastore; mark any reports that can't

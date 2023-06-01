@@ -216,18 +216,10 @@ impl<const SEED_SIZE: usize, Q: AccumulableQueryType, A: vdaf::Aggregator<SEED_S
 
     /// Applies the postprocessing function to all aggregate shares. This is special
     /// dpsa-project functionality and not part of the original janus code.
+    #[cfg(feature = "experimental")]
     pub fn postprocess(&mut self, vdaf: &A) -> Result<(), anyhow::Error> {
         for (_, accumulation) in &mut self.aggregations {
-            println!("adding privacy! (2)");
             accumulation.batch_aggregation.postprocess(vdaf)?;
-
-            // if let Some(ref mut aggregate_share) = accumulation.batch_aggregation.aggregate_share {
-            //     vdaf.postprocess(&self.aggregation_parameter, aggregate_share)?;
-            // }
-
-            // match aggregate_share {
-            //     Some(ref mut aggregate_share) => vdaf.postprocess(&self.aggregation_parameter, &mut *aggregate_share)?,
-            //     None => ()
         }
         Ok(())
     }
