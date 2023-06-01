@@ -315,7 +315,6 @@ impl Task {
     /// Checks if the given aggregator authentication token is valid (i.e. matches with an
     /// authentication token recognized by this task).
     pub fn check_aggregator_auth_token(&self, auth_token: &AuthenticationToken) -> bool {
-        println!("my tokens are: {:?}", self.aggregator_auth_tokens().iter().map(|a| a.as_ref().to_vec()).collect::<Vec<_>>());
         self.aggregator_auth_tokens
             .iter()
             .rev()
