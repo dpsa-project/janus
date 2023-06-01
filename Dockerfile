@@ -51,4 +51,4 @@ COPY --from=builder /src/target/release/$BINARY /$BINARY
 # from the ENTRYPOINT at runtime.
 ENV BINARY=$BINARY
 ENV CONFIG=$CONFIG
-ENTRYPOINT ["/bin/sh", "-c", "exec /$BINARY  --config-file $CONFIG --datastore-keys vWoEFA7F+ojcF+HohGLn/Q"]
+ENTRYPOINT ["/bin/sh", "-c", "exec /$BINARY \"$0\" \"$@\""]
