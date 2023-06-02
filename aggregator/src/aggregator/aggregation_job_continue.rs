@@ -199,8 +199,8 @@ impl VdafOps {
             }
         }
 
-        // This is special dpsa-project functionality. We postprocess the aggregate shares,
-        // i.e., we add noise for differential privacy.
+        // Postprocess the aggregated shares. This allows, e.g., for central differential privacy,
+        // but the implementation is experimental.
         #[cfg(feature = "experimental")]
         accumulator.postprocess(&vdaf).unwrap();
 
