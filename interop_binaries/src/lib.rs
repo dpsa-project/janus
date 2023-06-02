@@ -159,28 +159,31 @@ impl From<VdafInstance> for VdafObject {
             },
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { length, noise_param } => {
-                VdafObject::Prio3FixedPoint16BitBoundedL2VecSum {
-                    length: NumberAsString(length),
-                    noise_param: (NumberAsString(noise_param.0), NumberAsString(noise_param.1)),
-                }
-            }
+            VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum {
+                length,
+                noise_param,
+            } => VdafObject::Prio3FixedPoint16BitBoundedL2VecSum {
+                length: NumberAsString(length),
+                noise_param: (NumberAsString(noise_param.0), NumberAsString(noise_param.1)),
+            },
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { length, noise_param } => {
-                VdafObject::Prio3FixedPoint32BitBoundedL2VecSum {
-                    length: NumberAsString(length),
-                    noise_param: (NumberAsString(noise_param.0), NumberAsString(noise_param.1)),
-                }
-            }
+            VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum {
+                length,
+                noise_param,
+            } => VdafObject::Prio3FixedPoint32BitBoundedL2VecSum {
+                length: NumberAsString(length),
+                noise_param: (NumberAsString(noise_param.0), NumberAsString(noise_param.1)),
+            },
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length, noise_param } => {
-                VdafObject::Prio3FixedPoint64BitBoundedL2VecSum {
-                    length: NumberAsString(length),
-                    noise_param: (NumberAsString(noise_param.0), NumberAsString(noise_param.1)),
-                }
-            }
+            VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum {
+                length,
+                noise_param,
+            } => VdafObject::Prio3FixedPoint64BitBoundedL2VecSum {
+                length: NumberAsString(length),
+                noise_param: (NumberAsString(noise_param.0), NumberAsString(noise_param.1)),
+            },
             _ => panic!("Unsupported VDAF: {vdaf:?}"),
         }
     }
@@ -207,19 +210,31 @@ impl From<VdafObject> for VdafInstance {
             },
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafObject::Prio3FixedPoint16BitBoundedL2VecSum { length, noise_param } => {
-                VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { length: length.0, noise_param: (noise_param.0.0, noise_param.1.0) }
-            }
+            VdafObject::Prio3FixedPoint16BitBoundedL2VecSum {
+                length,
+                noise_param,
+            } => VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum {
+                length: length.0,
+                noise_param: (noise_param.0 .0, noise_param.1 .0),
+            },
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafObject::Prio3FixedPoint32BitBoundedL2VecSum { length, noise_param } => {
-                VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { length: length.0, noise_param: (noise_param.0.0, noise_param.1.0) }
-            }
+            VdafObject::Prio3FixedPoint32BitBoundedL2VecSum {
+                length,
+                noise_param,
+            } => VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum {
+                length: length.0,
+                noise_param: (noise_param.0 .0, noise_param.1 .0),
+            },
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafObject::Prio3FixedPoint64BitBoundedL2VecSum { length, noise_param } => {
-                VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length: length.0, noise_param: (noise_param.0.0, noise_param.1.0) }
-            }
+            VdafObject::Prio3FixedPoint64BitBoundedL2VecSum {
+                length,
+                noise_param,
+            } => VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum {
+                length: length.0,
+                noise_param: (noise_param.0 .0, noise_param.1 .0),
+            },
         }
     }
 }

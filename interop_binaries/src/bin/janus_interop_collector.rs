@@ -384,7 +384,10 @@ async fn handle_collection_start(
         #[cfg(feature = "fpvec_bounded_l2")]
         (
             ParsedQuery::TimeInterval(batch_interval),
-            janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { length, noise_param },
+            janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum {
+                length,
+                noise_param,
+            },
         ) => {
             let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>> =
                 Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length, noise_param)
@@ -407,7 +410,10 @@ async fn handle_collection_start(
         #[cfg(feature = "fpvec_bounded_l2")]
         (
             ParsedQuery::TimeInterval(batch_interval),
-            janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { length, noise_param },
+            janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum {
+                length,
+                noise_param,
+            },
         ) => {
             let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>> =
                 Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length, noise_param)
@@ -430,7 +436,10 @@ async fn handle_collection_start(
         #[cfg(feature = "fpvec_bounded_l2")]
         (
             ParsedQuery::TimeInterval(batch_interval),
-            janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length, noise_param },
+            janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum {
+                length,
+                noise_param,
+            },
         ) => {
             let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>> =
                 Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length, noise_param)
@@ -485,7 +494,10 @@ async fn handle_collection_start(
         #[cfg(feature = "fpvec_bounded_l2")]
         (
             ParsedQuery::FixedSize(fixed_size_query),
-            janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { length, noise_param },
+            janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum {
+                length,
+                noise_param,
+            },
         ) => {
             let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>> =
                 Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length, noise_param)
@@ -508,7 +520,10 @@ async fn handle_collection_start(
         #[cfg(feature = "fpvec_bounded_l2")]
         (
             ParsedQuery::FixedSize(fixed_size_query),
-            janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { length, noise_param },
+            janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum {
+                length,
+                noise_param,
+            },
         ) => {
             let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>> =
                 Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length, noise_param)
@@ -531,7 +546,10 @@ async fn handle_collection_start(
         #[cfg(feature = "fpvec_bounded_l2")]
         (
             ParsedQuery::FixedSize(fixed_size_query),
-            janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length, noise_param },
+            janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum {
+                length,
+                noise_param,
+            },
         ) => {
             let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>> =
                 Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length, noise_param)
