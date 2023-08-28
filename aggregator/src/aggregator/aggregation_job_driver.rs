@@ -30,7 +30,7 @@ use opentelemetry::{
 };
 use prio::{
     codec::{Decode, Encode, ParameterizedDecode},
-    vdaf::{self, PrepareTransition},
+    vdaf::{self, PrepareTransition}, dp::distributions::ZCdpDiscreteGaussian,
 };
 use reqwest::Method;
 use std::{
@@ -119,7 +119,7 @@ impl AggregationJobDriver {
         const SEED_SIZE: usize,
         C: Clock,
         Q: CollectableQueryType,
-        A: vdaf::Aggregator<SEED_SIZE, 16>,
+        A: vdaf::AggregatorWithNoise<SEED_SIZE, 16, ZCdpDiscreteGaussian>,
     >(
         &self,
         datastore: Arc<Datastore<C>>,
@@ -282,7 +282,7 @@ impl AggregationJobDriver {
         const SEED_SIZE: usize,
         C: Clock,
         Q: CollectableQueryType,
-        A: vdaf::Aggregator<SEED_SIZE, 16> + Send + Sync + 'static,
+        A: vdaf::AggregatorWithNoise<SEED_SIZE, 16, ZCdpDiscreteGaussian> + Send + Sync + 'static,
     >(
         &self,
         datastore: &Datastore<C>,
@@ -421,7 +421,7 @@ impl AggregationJobDriver {
         const SEED_SIZE: usize,
         C: Clock,
         Q: CollectableQueryType,
-        A: vdaf::Aggregator<SEED_SIZE, 16> + Send + Sync + 'static,
+        A: vdaf::AggregatorWithNoise<SEED_SIZE, 16, ZCdpDiscreteGaussian> + Send + Sync + 'static,
     >(
         &self,
         datastore: &Datastore<C>,
@@ -529,7 +529,7 @@ impl AggregationJobDriver {
         const SEED_SIZE: usize,
         C: Clock,
         Q: CollectableQueryType,
-        A: vdaf::Aggregator<SEED_SIZE, 16> + Send + Sync + 'static,
+        A: vdaf::AggregatorWithNoise<SEED_SIZE, 16, ZCdpDiscreteGaussian> + Send + Sync + 'static,
     >(
         &self,
         datastore: &Datastore<C>,
@@ -660,6 +660,7 @@ impl AggregationJobDriver {
             report_aggregations_to_write,
         )?;
         let aggregation_job_writer = Arc::new(aggregation_job_writer);
+        accumulator.postprocess(&vdaf);
         let accumulator = Arc::new(accumulator);
         datastore
             .run_tx_with_name("step_aggregation_job_2", |tx| {

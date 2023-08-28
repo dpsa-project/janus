@@ -18,7 +18,7 @@ use janus_messages::{
 use opentelemetry::{metrics::Counter, KeyValue};
 use prio::{
     codec::{Encode, ParameterizedDecode},
-    vdaf::{self, PrepareTransition},
+    vdaf::{self, PrepareTransition}, dp::distributions::ZCdpDiscreteGaussian,
 };
 use std::{io::Cursor, sync::Arc};
 use tokio::try_join;
@@ -42,7 +42,7 @@ impl VdafOps {
     where
         C: Clock,
         Q: AccumulableQueryType,
-        A: vdaf::Aggregator<SEED_SIZE, 16> + 'static + Send + Sync,
+        A: vdaf::AggregatorWithNoise<SEED_SIZE, 16, ZCdpDiscreteGaussian> + 'static + Send + Sync,
         for<'a> A::PrepareState: Send + Sync + Encode + ParameterizedDecode<(&'a A, usize)>,
     {
         // Handle each transition in the request.

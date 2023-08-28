@@ -22,7 +22,7 @@ use postgres_protocol::types::{
 use postgres_types::{accepts, to_sql_checked, FromSql, ToSql};
 use prio::{
     codec::Encode,
-    vdaf::{self, Aggregatable},
+    vdaf::{self, Aggregatable}, dp::{distributions::ZCdpDiscreteGaussian, DifferentialPrivacyStrategy, Rational, ZCdpBudget},
 };
 use rand::{distributions::Standard, prelude::Distribution};
 use serde::{Deserialize, Serialize};
@@ -963,6 +963,21 @@ impl<const SEED_SIZE: usize, Q: QueryType, A: vdaf::Aggregator<SEED_SIZE, 16>>
             ..self
         })
     }
+}
+
+
+
+
+pub fn batch_agg_postprocess<const SEED_SIZE: usize, Q: QueryType, A: vdaf::Aggregator<SEED_SIZE, 16> + vdaf::AggregatorWithNoise<SEED_SIZE, 16, ZCdpDiscreteGaussian>>
+    (batch: &mut BatchAggregation<SEED_SIZE, Q, A>, vdaf: &A) -> Result<(), anyhow::Error>
+{
+    let r = Rational::from_unsigned(100u32, 1u32).unwrap();
+    let budget = ZCdpBudget::new(r);
+    let strategy = ZCdpDiscreteGaussian::from_budget(budget);
+    if let Some(aggregate_share) = &mut batch.aggregate_share {
+        vdaf.add_noise_to_agg_share(&strategy, &batch.aggregation_parameter, aggregate_share, 0)?
+    }
+    Ok(())
 }
 
 impl<const SEED_SIZE: usize, A: vdaf::Aggregator<SEED_SIZE, 16>>

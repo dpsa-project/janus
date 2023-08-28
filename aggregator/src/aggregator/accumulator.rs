@@ -5,7 +5,7 @@ use futures::future::try_join_all;
 use janus_aggregator_core::{
     datastore::{
         self,
-        models::{BatchAggregation, BatchAggregationState},
+        models::{BatchAggregation, BatchAggregationState, batch_agg_postprocess},
         Transaction,
     },
     query_type::AccumulableQueryType,
@@ -16,7 +16,7 @@ use janus_core::{
     time::{Clock, IntervalExt},
 };
 use janus_messages::{Interval, ReportId, ReportIdChecksum, Time};
-use prio::vdaf;
+use prio::{vdaf, dp::{ZCdpBudget, distributions::ZCdpDiscreteGaussian}};
 use rand::{thread_rng, Rng};
 use std::{
     collections::{HashMap, HashSet},
@@ -50,7 +50,7 @@ struct BatchData<
     included_report_ids: HashSet<ReportId>,
 }
 
-impl<const SEED_SIZE: usize, Q: AccumulableQueryType, A: vdaf::Aggregator<SEED_SIZE, 16>>
+impl<const SEED_SIZE: usize, Q: AccumulableQueryType, A: vdaf::AggregatorWithNoise<SEED_SIZE, 16, ZCdpDiscreteGaussian>>
     Accumulator<SEED_SIZE, Q, A>
 {
     /// Creates a new accumulator.
@@ -212,5 +212,19 @@ impl<const SEED_SIZE: usize, Q: AccumulableQueryType, A: vdaf::Aggregator<SEED_S
             .unwrap()
             .into_inner()
             .unwrap())
+    }
+
+
+    /// Applies the vdaf-postprocessing function to all aggregate shares.
+    /// This functionality can be used, e.g., to add noise in the sense of
+    /// differential privacy. But note that this interface is purely experimental
+    /// and may change at any time.
+    pub fn postprocess(&mut self, vdaf: &A) -> Result<(), anyhow::Error> {
+        println!("Trying to run postprocess!!!");
+        for (_, accumulation) in &mut self.aggregations {
+            batch_agg_postprocess(&mut accumulation.batch_aggregation, vdaf)?;
+            // .postprocess(vdaf)?;
+        }
+        Ok(())
     }
 }
