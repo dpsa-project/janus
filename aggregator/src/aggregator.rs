@@ -70,7 +70,7 @@ use prio::{
         poplar1::Poplar1,
         prg::PrgSha3,
         prio3::{Prio3, Prio3Count, Prio3Histogram, Prio3Sum, Prio3SumVecMultithreaded},
-    },
+    }, dp::distributions::ZCdpDiscreteGaussian,
 };
 use reqwest::Client;
 use ring::digest::{digest, SHA256};
@@ -843,9 +843,13 @@ impl<C: Clock> TaskAggregator<C> {
             }
 
             VdafInstance::Poplar1 { bits } => {
-                let vdaf = Poplar1::new_sha3(*bits);
+                let vdaf = Prio3::new_histogram(2, 2)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
-                VdafOps::Poplar1(Arc::new(vdaf), verify_key)
+                VdafOps::Prio3Histogram(Arc::new(vdaf), verify_key)
+                // let vdaf = Poplar1::new_sha3(*bits);
+                // let verify_key = task.primary_vdaf_verify_key()?;
+                // VdafOps::Poplar1(Arc::new(vdaf), verify_key)
+                // VdafOps::Fake(Arc::new(dummy_vdaf::Vdaf::new()))
             }
 
             #[cfg(feature = "test-util")]
@@ -1038,7 +1042,7 @@ enum VdafOps {
         Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>>,
         VerifyKey<VERIFY_KEY_LENGTH>,
     ),
-    Poplar1(Arc<Poplar1<PrgSha3, 16>>, VerifyKey<VERIFY_KEY_LENGTH>),
+    // Poplar1(Arc<Poplar1<PrgSha3, 16>>, VerifyKey<VERIFY_KEY_LENGTH>),
 
     #[cfg(feature = "test-util")]
     Fake(Arc<dummy_vdaf::Vdaf>),
@@ -1122,13 +1126,13 @@ macro_rules! vdaf_ops_dispatch {
                 $body
             }
 
-            crate::aggregator::VdafOps::Poplar1(vdaf, verify_key) => {
-                let $vdaf = vdaf;
-                let $verify_key = verify_key;
-                type $Vdaf = ::prio::vdaf::poplar1::Poplar1<::prio::vdaf::prg::PrgSha3, 16>;
-                const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
-            }
+            // crate::aggregator::VdafOps::Poplar1(vdaf, verify_key) => {
+            //     let $vdaf = vdaf;
+            //     let $verify_key = verify_key;
+            //     type $Vdaf = ::prio::vdaf::poplar1::Poplar1<::prio::vdaf::prg::PrgSha3, 16>;
+            //     const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+            //     $body
+            // }
 
             #[cfg(feature = "test-util")]
             crate::aggregator::VdafOps::Fake(vdaf) => {
