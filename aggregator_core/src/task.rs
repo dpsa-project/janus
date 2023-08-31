@@ -12,6 +12,7 @@ use janus_messages::{
     taskprov, AggregationJobId, CollectionJobId, Duration, HpkeAeadId, HpkeConfig, HpkeConfigId,
     HpkeKdfId, HpkeKemId, Role, TaskId, Time,
 };
+use prio::dp::distributions::ZCdpDiscreteGaussian;
 use rand::{distributions::Standard, random, thread_rng, Rng};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{array::TryFromSliceError, collections::HashMap};
@@ -68,6 +69,14 @@ impl TryFrom<&taskprov::Query> for QueryType {
     }
 }
 
+
+#[derive(Clone, Derivative, PartialEq, Eq)]
+#[derivative(Debug)]
+pub enum DpStrategyInstance {
+    ZCdpDiscreteGaussian(ZCdpDiscreteGaussian)
+}
+
+
 /// A verification key for a VDAF, with a fixed length. It must be kept secret from clients to
 /// maintain robustness, and it must be shared between aggregators.
 pub struct VerifyKey<const SEED_SIZE: usize>([u8; SEED_SIZE]);
@@ -107,6 +116,8 @@ pub struct Task {
     query_type: QueryType,
     /// The VDAF this task executes.
     vdaf: VdafInstance,
+    /// The strategy for differential privacy.
+    dp_strategy: DpStrategyInstance,
     /// The role performed by the aggregator.
     role: Role,
     /// Secret verification keys shared by the aggregators.
@@ -147,6 +158,7 @@ impl Task {
         helper_aggregator_endpoint: Url,
         query_type: QueryType,
         vdaf: VdafInstance,
+        dp_strategy: DpStrategyInstance,
         role: Role,
         vdaf_verify_keys: Vec<SecretBytes>,
         max_batch_query_count: u64,
@@ -166,6 +178,7 @@ impl Task {
             helper_aggregator_endpoint,
             query_type,
             vdaf,
+            dp_strategy,
             role,
             vdaf_verify_keys,
             max_batch_query_count,
@@ -192,6 +205,7 @@ impl Task {
         helper_aggregator_endpoint: Url,
         query_type: QueryType,
         vdaf: VdafInstance,
+        dp_strategy: DpStrategyInstance,
         role: Role,
         vdaf_verify_keys: Vec<SecretBytes>,
         max_batch_query_count: u64,
@@ -220,6 +234,7 @@ impl Task {
             helper_aggregator_endpoint: url_ensure_trailing_slash(helper_aggregator_endpoint),
             query_type,
             vdaf,
+            dp_strategy,
             role,
             vdaf_verify_keys,
             max_batch_query_count,
@@ -495,6 +510,7 @@ pub struct SerializedTask {
     helper_aggregator_endpoint: Url,
     query_type: QueryType,
     vdaf: VdafInstance,
+    dp_strategy: DpStrategyInstance,
     role: Role,
     vdaf_verify_keys: Vec<String>, // in unpadded base64url
     max_batch_query_count: u64,
@@ -577,6 +593,7 @@ impl Serialize for Task {
             helper_aggregator_endpoint: self.helper_aggregator_endpoint.clone(),
             query_type: self.query_type,
             vdaf: self.vdaf.clone(),
+            dp_strategy: self.dp_strategy.clone(),
             role: self.role,
             vdaf_verify_keys,
             max_batch_query_count: self.max_batch_query_count,
@@ -619,6 +636,7 @@ impl TryFrom<SerializedTask> for Task {
             serialized_task.helper_aggregator_endpoint,
             serialized_task.query_type,
             serialized_task.vdaf,
+            serialized_task.dp_strategy,
             serialized_task.role,
             vdaf_verify_keys,
             serialized_task.max_batch_query_count,
@@ -716,6 +734,7 @@ pub mod test_util {
                     "https://helper.endpoint".parse().unwrap(),
                     query_type,
                     vdaf,
+                    todo!(),
                     role,
                     Vec::from([vdaf_verify_key]),
                     1,

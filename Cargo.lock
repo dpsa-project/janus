@@ -2546,6 +2546,7 @@ dependencies = [
  "num-bigint",
  "num-integer",
  "num-traits",
+ "serde",
 ]
 
 [[package]]
@@ -3006,7 +3007,7 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 [[package]]
 name = "prio"
 version = "0.14.0"
-source = "git+https://github.com/dpsa4fl/libprio-rs.git?branch=dp-update-for-janus#bd41119c4c3b2d1a2bc363ba055d9cd99002a8f4"
+source = "git+https://github.com/dpsa4fl/libprio-rs.git?branch=dp-update-for-janus#76d20d9db954913d6b8e492af0cc358a58582baf"
 dependencies = [
  "aes",
  "base64 0.21.2",

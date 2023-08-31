@@ -27,7 +27,7 @@ use opentelemetry::{
 };
 use prio::{
     codec::{Decode, Encode},
-    vdaf,
+    vdaf, dp::DifferentialPrivacyStrategy,
 };
 use reqwest::Method;
 use std::{sync::Arc, time::Duration};
@@ -86,6 +86,7 @@ impl CollectionJobDriver {
                         VERIFY_KEY_LENGTH,
                         C,
                         TimeInterval,
+                        _,
                         VdafType
                     >(datastore, Arc::new(vdaf), lease)
                     .await
@@ -97,6 +98,7 @@ impl CollectionJobDriver {
                         VERIFY_KEY_LENGTH,
                         C,
                         FixedSize,
+                        _,
                         VdafType
                     >(datastore, Arc::new(vdaf), lease)
                     .await
@@ -109,7 +111,8 @@ impl CollectionJobDriver {
         const SEED_SIZE: usize,
         C: Clock,
         Q: CollectableQueryType,
-        A: vdaf::Aggregator<SEED_SIZE, 16> + Send + Sync,
+        S: DifferentialPrivacyStrategy,
+        A: vdaf::AggregatorWithNoise<SEED_SIZE, 16, S> + Send + Sync,
     >(
         &self,
         datastore: Arc<Datastore<C>>,
@@ -208,7 +211,7 @@ impl CollectionJobDriver {
         }
 
         let (leader_aggregate_share, report_count, checksum) =
-            compute_aggregate_share::<SEED_SIZE, Q, A>(&task, &batch_aggregations)
+            compute_aggregate_share::<SEED_SIZE, Q, S, A>(&task, &batch_aggregations)
                 .await
                 .map_err(|e| datastore::Error::User(e.into()))?;
 
