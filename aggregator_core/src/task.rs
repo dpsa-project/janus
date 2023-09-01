@@ -1,6 +1,6 @@
 //! Shared parameters for a DAP task.
 
-use crate::SecretBytes;
+use crate::{SecretBytes, dp::DpStrategyInstance};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use derivative::Derivative;
 use janus_core::{
@@ -12,6 +12,7 @@ use janus_messages::{
     taskprov, AggregationJobId, CollectionJobId, Duration, HpkeAeadId, HpkeConfig, HpkeConfigId,
     HpkeKdfId, HpkeKemId, Role, TaskId, Time,
 };
+use prio::dp::DifferentialPrivacyStrategy;
 use rand::{distributions::Standard, random, thread_rng, Rng};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{array::TryFromSliceError, collections::HashMap};
@@ -507,6 +508,7 @@ pub struct SerializedTask {
     aggregator_auth_tokens: Vec<AuthenticationToken>,
     collector_auth_tokens: Vec<AuthenticationToken>,
     hpke_keys: Vec<HpkeKeypair>, // uses unpadded base64url
+    dp_strategy: DpStrategyInstance,
 }
 
 impl SerializedTask {
@@ -592,6 +594,7 @@ impl Serialize for Task {
             aggregator_auth_tokens: self.aggregator_auth_tokens.clone(),
             collector_auth_tokens: self.collector_auth_tokens.clone(),
             hpke_keys,
+            dp_strategy: todo!(),
         }
         .serialize(serializer)
     }
