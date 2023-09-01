@@ -70,7 +70,7 @@ use prio::{
         poplar1::Poplar1,
         prg::PrgSha3,
         prio3::{Prio3, Prio3Count, Prio3Histogram, Prio3Sum, Prio3SumVecMultithreaded},
-    }, dp::distributions::ZCdpDiscreteGaussian,
+    }, dp::{distributions::ZCdpDiscreteGaussian, DifferentialPrivacyStrategy},
 };
 use reqwest::Client;
 use ring::digest::{digest, SHA256};
@@ -2703,6 +2703,7 @@ impl VdafOps {
                     Self::handle_aggregate_share_generic::<
                         VERIFY_KEY_LENGTH,
                         TimeInterval,
+                        _,
                         VdafType,
                         _,
                     >(datastore, clock, task, Arc::clone(vdaf), req_bytes, batch_aggregation_shard_count, collector_hpke_config)
@@ -2714,6 +2715,7 @@ impl VdafOps {
                     Self::handle_aggregate_share_generic::<
                         VERIFY_KEY_LENGTH,
                         FixedSize,
+                        _,
                         VdafType,
                         _,
                     >(datastore, clock, task, Arc::clone(vdaf), req_bytes, batch_aggregation_shard_count, collector_hpke_config)
@@ -2726,7 +2728,8 @@ impl VdafOps {
     async fn handle_aggregate_share_generic<
         const SEED_SIZE: usize,
         Q: CollectableQueryType,
-        A: vdaf::Aggregator<SEED_SIZE, 16> + Send + Sync + 'static,
+        S: DifferentialPrivacyStrategy,
+        A: vdaf::AggregatorWithNoise<SEED_SIZE, 16, S> + Send + Sync + 'static,
         C: Clock,
     >(
         datastore: &Datastore<C>,
@@ -2841,7 +2844,7 @@ impl VdafOps {
                             );
 
                             let (helper_aggregate_share, report_count, checksum) =
-                                compute_aggregate_share::<SEED_SIZE, Q, A>(
+                                compute_aggregate_share::<SEED_SIZE, Q, S, A>(
                                     &task,
                                     &batch_aggregations,
                                 )
