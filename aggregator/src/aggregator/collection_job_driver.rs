@@ -5,6 +5,7 @@ use crate::aggregator::{
     http_handlers::AGGREGATE_SHARES_ROUTE, query_type::CollectableQueryType,
     send_request_to_helper, Error,
 };
+use crate::strategy_alias;
 use derivative::Derivative;
 use futures::future::{try_join_all, BoxFuture};
 use janus_aggregator_core::{
@@ -16,9 +17,7 @@ use janus_aggregator_core::{
     },
     task,
 };
-use janus_core::{time::Clock, vdaf_dispatch
-                 , dp::NoDifferentialPrivacy
-};
+use janus_core::{time::Clock, vdaf_dispatch};
 use janus_messages::{
     query_type::{FixedSize, QueryType, TimeInterval},
     AggregateShare, AggregateShareReq, BatchSelector,
@@ -29,7 +28,8 @@ use opentelemetry::{
 };
 use prio::{
     codec::{Decode, Encode},
-    vdaf, dp::DifferentialPrivacyStrategy,
+    dp::DifferentialPrivacyStrategy,
+    vdaf,
 };
 use reqwest::Method;
 use std::{sync::Arc, time::Duration};

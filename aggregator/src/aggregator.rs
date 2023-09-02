@@ -39,7 +39,6 @@ use janus_aggregator_core::{
 #[cfg(feature = "test-util")]
 use janus_core::test_util::dummy_vdaf;
 use janus_core::{
-    dp::{DpStrategyInstance, NoDifferentialPrivacy},
     hpke::{self, HpkeApplicationInfo, HpkeKeypair, Label},
     http::response_to_problem_details,
     task::{AuthenticationToken, VdafInstance, VERIFY_KEY_LENGTH},
@@ -66,11 +65,9 @@ use prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded;
 use prio::vdaf::{PrepareTransition, VdafError};
 use prio::{
     codec::{Decode, Encode, ParameterizedDecode},
-    dp::{distributions::ZCdpDiscreteGaussian, DifferentialPrivacyStrategy},
+    dp::{DifferentialPrivacyStrategy},
     vdaf::{
         self,
-        poplar1::Poplar1,
-        prg::PrgSha3,
         prio3::{Prio3, Prio3Count, Prio3Histogram, Prio3Sum, Prio3SumVecMultithreaded},
     },
 };
@@ -844,7 +841,7 @@ impl<C: Clock> TaskAggregator<C> {
                 VdafOps::Prio3FixedPoint64BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
             }
 
-            VdafInstance::Poplar1 { bits } => {
+            VdafInstance::Poplar1 { bits: _ } => {
                 let vdaf = Prio3::new_histogram(2, 2)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
                 VdafOps::Prio3Histogram(Arc::new(vdaf), verify_key)
@@ -1049,6 +1046,7 @@ enum VdafOps {
     Fake(Arc<dummy_vdaf::Vdaf>),
 }
 
+#[macro_export]
 macro_rules! strategy_alias {
     (false, $DpStrategy:ident, $type:ty) => {};
     (true, $DpStrategy:ident, $type:ty) => {
