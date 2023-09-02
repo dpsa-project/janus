@@ -14,7 +14,7 @@ use janus_aggregator_core::{
         models::{CollectionJobState, Lease},
         Datastore,
     },
-    task,
+    task, dp::NoStrategy,
 };
 use janus_core::{time::Clock, vdaf_dispatch};
 use janus_messages::{
@@ -86,7 +86,7 @@ impl CollectionJobDriver {
                         VERIFY_KEY_LENGTH,
                         C,
                         TimeInterval,
-                        _,
+                        NoStrategy,
                         VdafType
                     >(datastore, Arc::new(vdaf), lease)
                     .await
@@ -98,7 +98,7 @@ impl CollectionJobDriver {
                         VERIFY_KEY_LENGTH,
                         C,
                         FixedSize,
-                        _,
+                        NoStrategy,
                         VdafType
                     >(datastore, Arc::new(vdaf), lease)
                     .await

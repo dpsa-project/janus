@@ -7,7 +7,7 @@ use prio::{
     flp::{
         gadgets::{BlindPolyEval, ParallelSumMultithreaded},
         TypeWithNoise,
-    },
+    }, vdaf::{AggregatorWithNoise, prg::PrgSha3},
 };
 use serde::{Deserialize, Serialize};
 
@@ -49,3 +49,16 @@ impl TypeWithNoise<NoStrategy>
     >
 {
 }
+
+impl AggregatorWithNoise<16,16,NoStrategy> for prio::vdaf::poplar1::Poplar1<PrgSha3, 16> {
+    fn add_noise_to_agg_share(
+        &self,
+        dp_strategy: &NoStrategy,
+        agg_param: &Self::AggregationParam,
+        agg_share: &mut Self::AggregateShare,
+        num_measurements: usize,
+    ) -> Result<(), prio::vdaf::VdafError> {
+        todo!()
+    }
+}
+
