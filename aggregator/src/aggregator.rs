@@ -1114,7 +1114,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $verify_key = verify_key;
                 type $Vdaf =
                     ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>;
-                strategy_alias!($bool, $DpStrategy, ::prio::dp::deistributions::ZCdpDiscreteGaussian);
+                strategy_alias!($bool, $DpStrategy, ::prio::dp::distributions::ZCdpDiscreteGaussian);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1125,7 +1125,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $verify_key = verify_key;
                 type $Vdaf =
                     ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>;
-                strategy_alias!($bool, $DpStrategy, ::prio::dp::deistributions::ZCdpDiscreteGaussian);
+                strategy_alias!($bool, $DpStrategy, ::prio::dp::distributions::ZCdpDiscreteGaussian);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1136,7 +1136,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $verify_key = verify_key;
                 type $Vdaf =
                     ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>;
-                strategy_alias!($bool, $DpStrategy, ::prio::dp::deistributions::ZCdpDiscreteGaussian);
+                strategy_alias!($bool, $DpStrategy, ::prio::dp::distributions::ZCdpDiscreteGaussian);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
