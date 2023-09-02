@@ -39,6 +39,7 @@ use janus_aggregator_core::{
 #[cfg(feature = "test-util")]
 use janus_core::test_util::dummy_vdaf;
 use janus_core::{
+    dp::DpStrategyInstance,
     hpke::{self, HpkeApplicationInfo, HpkeKeypair, Label},
     http::response_to_problem_details,
     task::{AuthenticationToken, VdafInstance, VERIFY_KEY_LENGTH},
@@ -65,7 +66,7 @@ use prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded;
 use prio::vdaf::{PrepareTransition, VdafError};
 use prio::{
     codec::{Decode, Encode, ParameterizedDecode},
-    dp::{DifferentialPrivacyStrategy},
+    dp::DifferentialPrivacyStrategy,
     vdaf::{
         self,
         prio3::{Prio3, Prio3Count, Prio3Histogram, Prio3Sum, Prio3SumVecMultithreaded},
@@ -2768,7 +2769,7 @@ impl VdafOps {
     async fn handle_aggregate_share_generic<
         const SEED_SIZE: usize,
         Q: CollectableQueryType,
-        S: DifferentialPrivacyStrategy,
+        S: DifferentialPrivacyStrategy + TryFrom<DpStrategyInstance>,
         A: vdaf::AggregatorWithNoise<SEED_SIZE, 16, S> + Send + Sync + 'static,
         C: Clock,
     >(
@@ -2883,13 +2884,20 @@ impl VdafOps {
                                 &batch_aggregations,
                             );
 
-                            let (helper_aggregate_share, report_count, checksum) =
+                            let (mut helper_aggregate_share, report_count, checksum) =
                                 compute_aggregate_share::<SEED_SIZE, Q, S, A>(
                                     &task,
                                     &batch_aggregations,
                                 )
                                 .await
                                 .map_err(|e| datastore::Error::User(e.into()))?;
+
+                            vdaf.add_noise_to_agg_share(
+                                &S::try_from(task.dp_strategy().clone())?,
+                                &aggregation_param,
+                                &mut helper_aggregate_share,
+                                report_count.try_into()?,
+                            );
 
                             // Now that we are satisfied that the request is serviceable, we consume
                             // a query by recording the aggregate share request parameters and the

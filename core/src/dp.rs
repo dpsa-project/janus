@@ -1,5 +1,6 @@
 #[cfg(feature = "test-util")]
 use crate::test_util::dummy_vdaf::Vdaf;
+use anyhow::anyhow;
 use prio::{
     dp::{
         distributions::ZCdpDiscreteGaussian, DifferentialPrivacyBudget,
@@ -9,7 +10,8 @@ use prio::{
     flp::{
         gadgets::{BlindPolyEval, ParallelSumMultithreaded},
         TypeWithNoise,
-    }, vdaf::{AggregatorWithNoise, prg::PrgSha3},
+    },
+    vdaf::{prg::PrgSha3, AggregatorWithNoise},
 };
 use serde::{Deserialize, Serialize};
 
@@ -22,6 +24,30 @@ pub enum DpStrategyInstance {
 }
 
 impl DpStrategyInstance {}
+
+impl TryFrom<DpStrategyInstance> for NoDifferentialPrivacy {
+    type Error = anyhow::Error;
+    fn try_from(value: DpStrategyInstance) -> Result<Self, Self::Error> {
+        match value {
+            DpStrategyInstance::NoDifferentialPrivacy(s) => Ok(s),
+            DpStrategyInstance::ZCdpDiscreteGaussian(_) => Err(anyhow!(
+                "Attempted to use ZCdp instance for NoDp strategy".to_string(),
+            )),
+        }
+    }
+}
+
+impl TryFrom<DpStrategyInstance> for ZCdpDiscreteGaussian {
+    type Error = anyhow::Error;
+    fn try_from(value: DpStrategyInstance) -> Result<Self, Self::Error> {
+        match value {
+            DpStrategyInstance::ZCdpDiscreteGaussian(s) => Ok(s),
+            DpStrategyInstance::NoDifferentialPrivacy(_) => Err(anyhow!(
+                "Attempted to use NoDp instance for ZCdp strategy".to_string(),
+            )),
+        }
+    }
+}
 
 pub struct NoBudget {}
 impl DifferentialPrivacyBudget for NoBudget {}
@@ -38,24 +64,23 @@ impl DifferentialPrivacyStrategy for NoDifferentialPrivacy {
     fn from_budget(_b: NoBudget) -> Self {
         NoDifferentialPrivacy {}
     }
-    fn create_distribution(&self, s: Self::Sensitivity) -> Result<Self::Distribution, DpError> {
-        todo!()
+    fn create_distribution(&self, _s: Self::Sensitivity) -> Result<Self::Distribution, DpError> {
+        Ok(NoDistribution {})
     }
 }
-
 
 ////////////////////////////////////////////////////////////////
 // implementations for vdafs from janus
 #[cfg(feature = "test-util")]
-impl AggregatorWithNoise<0,16,NoDifferentialPrivacy> for Vdaf {
+impl AggregatorWithNoise<0, 16, NoDifferentialPrivacy> for Vdaf {
     fn add_noise_to_agg_share(
         &self,
-        dp_strategy: &NoDifferentialPrivacy,
-        agg_param: &Self::AggregationParam,
-        agg_share: &mut Self::AggregateShare,
-        num_measurements: usize,
+        _dp_strategy: &NoDifferentialPrivacy,
+        _agg_param: &Self::AggregationParam,
+        _agg_share: &mut Self::AggregateShare,
+        _num_measurements: usize,
     ) -> Result<(), prio::vdaf::VdafError> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -72,15 +97,16 @@ impl TypeWithNoise<NoDifferentialPrivacy>
 {
 }
 
-impl AggregatorWithNoise<16,16,NoDifferentialPrivacy> for prio::vdaf::poplar1::Poplar1<PrgSha3, 16> {
+impl AggregatorWithNoise<16, 16, NoDifferentialPrivacy>
+    for prio::vdaf::poplar1::Poplar1<PrgSha3, 16>
+{
     fn add_noise_to_agg_share(
         &self,
-        dp_strategy: &NoDifferentialPrivacy,
-        agg_param: &Self::AggregationParam,
-        agg_share: &mut Self::AggregateShare,
-        num_measurements: usize,
+        _dp_strategy: &NoDifferentialPrivacy,
+        _agg_param: &Self::AggregationParam,
+        _agg_share: &mut Self::AggregateShare,
+        _num_measurements: usize,
     ) -> Result<(), prio::vdaf::VdafError> {
-        todo!()
+        Ok(())
     }
 }
-
