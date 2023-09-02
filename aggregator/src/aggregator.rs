@@ -32,7 +32,6 @@ use janus_aggregator_core::{
         },
         Datastore, Error as DatastoreError, Transaction,
     },
-    dp::{DpStrategyInstance, NoStrategy},
     query_type::AccumulableQueryType,
     task::{self, Task, VerifyKey},
     taskprov::{self, PeerAggregator},
@@ -40,6 +39,7 @@ use janus_aggregator_core::{
 #[cfg(feature = "test-util")]
 use janus_core::test_util::dummy_vdaf;
 use janus_core::{
+    dp::{DpStrategyInstance, NoDifferentialPrivacy},
     hpke::{self, HpkeApplicationInfo, HpkeKeypair, Label},
     http::response_to_problem_details,
     task::{AuthenticationToken, VdafInstance, VERIFY_KEY_LENGTH},
@@ -1054,13 +1054,15 @@ enum VdafOps {
 /// constructed VDAF and the verify key, a type alias name that the block can use to explicitly
 /// specify the VDAF's type, and the name of a const that will be set to the VDAF's verify key
 /// length, also for explicitly specifying type parameters.
+
 macro_rules! vdaf_ops_dispatch {
-    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident) => $body:tt) => {
+    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident, $DpStrategy:ident) => $body:tt) => {
         match $vdaf_ops {
             crate::aggregator::VdafOps::Prio3Count(vdaf, verify_key) => {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Count;
+                type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1069,6 +1071,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;
+                type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1077,6 +1080,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Sum;
+                type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1085,6 +1089,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;
+                type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1093,6 +1098,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Histogram;
+                type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1103,6 +1109,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $verify_key = verify_key;
                 type $Vdaf =
                     ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>;
+                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1113,6 +1120,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $verify_key = verify_key;
                 type $Vdaf =
                     ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>;
+                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1123,6 +1131,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $verify_key = verify_key;
                 type $Vdaf =
                     ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>;
+                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1131,6 +1140,7 @@ macro_rules! vdaf_ops_dispatch {
             //     let $vdaf = vdaf;
             //     let $verify_key = verify_key;
             //     type $Vdaf = ::prio::vdaf::poplar1::Poplar1<::prio::vdaf::prg::PrgSha3, 16>;
+            //     type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
             //     const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
             //     $body
             // }
@@ -1139,12 +1149,23 @@ macro_rules! vdaf_ops_dispatch {
                 let $vdaf = vdaf;
                 let $verify_key = &VerifyKey::new([]);
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
+                type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
                 const $VERIFY_KEY_LENGTH: usize = 0;
                 $body
             }
         }
     };
+
+    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident) => $body:tt) => {vdaf_ops_dispatch!($vdaf_ops, ($vdaf, $verify_key, $Vdaf, $VERIFY_KEY_LENGTH, DONTUSETHIS) => $body)};
 }
+
+// macro_rules! vdaf_ops_dispatch {
+//     ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident) => $body:tt) => {
+//         vdaf_ops_dispatch_impl!($vdaf_ops, ($vdaf, $verify_key, $Vdaf, $VERIFY_KEY_LENGTH, TESTDONTUSETHIS) => $body)
+//     };
+//     ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident, $DpStrategy:ident) => $body:tt) => {
+//     }
+// }
 
 impl VdafOps {
     #[tracing::instrument(
@@ -2697,46 +2718,42 @@ impl VdafOps {
         req_bytes: &[u8],
         collector_hpke_config: &HpkeConfig,
     ) -> Result<AggregateShare, Error> {
-        macro_rules! strategy_dispatch {
-            ($body:tt) => {
-                match task.dp_strategy() {
-                    DpStrategyInstance::NoDp(s) => {
-                        type DpStrategyType = NoStrategy;
-                        $body
-                    }
-                    DpStrategyInstance::ZCdpDiscreteGaussian(s) => {
-                        type DpStrategyType = ZCdpDiscreteGaussian;
-                        $body
-                    }
-                }
-            };
-        }
+        // macro_rules! strategy_dispatch {
+        //     ($body:tt) => {
+        //         match task.dp_strategy() {
+        //             DpStrategyInstance::NoDifferentialPrivacy(s) => {
+        //                 type DpStrategyType = NoStrategy;
+        //                 $body
+        //             }
+        //             DpStrategyInstance::ZCdpDiscreteGaussian(s) => {
+        //                 type DpStrategyType = ZCdpDiscreteGaussian;
+        //                 $body
+        //             }
+        //         }
+        //     };
+        // }
         match task.query_type() {
             task::QueryType::TimeInterval => {
-                vdaf_ops_dispatch!(self, (vdaf, _, VdafType, VERIFY_KEY_LENGTH) => {
-                    strategy_dispatch!({
-                            Self::handle_aggregate_share_generic::<
-                                VERIFY_KEY_LENGTH,
-                                TimeInterval,
-                                DpStrategyType,
-                                VdafType,
-                                _,
-                            >(datastore, clock, task, Arc::clone(vdaf), req_bytes, batch_aggregation_shard_count, collector_hpke_config)
-                            .await})
+                vdaf_ops_dispatch!(self, (vdaf, _, VdafType, VERIFY_KEY_LENGTH, DpStrategyType) => {
+                    Self::handle_aggregate_share_generic::<
+                        VERIFY_KEY_LENGTH,
+                        TimeInterval,
+                        DpStrategyType,
+                        VdafType,
+                        _,
+                    >(datastore, clock, task, Arc::clone(vdaf), req_bytes, batch_aggregation_shard_count, collector_hpke_config).await
                 })
             }
             task::QueryType::FixedSize { .. } => {
-                vdaf_ops_dispatch!(self, (vdaf, _, VdafType, VERIFY_KEY_LENGTH) => {
-                    strategy_dispatch!({
-                        Self::handle_aggregate_share_generic::<
-                            VERIFY_KEY_LENGTH,
-                            FixedSize,
-                            DpStrategyType,
-                            VdafType,
-                            _,
-                        >(datastore, clock, task, Arc::clone(vdaf), req_bytes, batch_aggregation_shard_count, collector_hpke_config)
-                        .await
-                })})
+                vdaf_ops_dispatch!(self, (vdaf, _, VdafType, VERIFY_KEY_LENGTH, DpStrategyType) => {
+                    Self::handle_aggregate_share_generic::<
+                        VERIFY_KEY_LENGTH,
+                        FixedSize,
+                        DpStrategyType,
+                        VdafType,
+                        _,
+                    >(datastore, clock, task, Arc::clone(vdaf), req_bytes, batch_aggregation_shard_count, collector_hpke_config).await
+                })
             }
         }
     }

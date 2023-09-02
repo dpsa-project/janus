@@ -14,9 +14,11 @@ use janus_aggregator_core::{
         models::{CollectionJobState, Lease},
         Datastore,
     },
-    task, dp::NoStrategy,
+    task,
 };
-use janus_core::{time::Clock, vdaf_dispatch};
+use janus_core::{time::Clock, vdaf_dispatch
+                 , dp::NoDifferentialPrivacy
+};
 use janus_messages::{
     query_type::{FixedSize, QueryType, TimeInterval},
     AggregateShare, AggregateShareReq, BatchSelector,
@@ -81,24 +83,24 @@ impl CollectionJobDriver {
     ) -> Result<(), Error> {
         match lease.leased().query_type() {
             task::QueryType::TimeInterval => {
-                vdaf_dispatch!(lease.leased().vdaf(), (vdaf, VdafType, VERIFY_KEY_LENGTH) => {
+                vdaf_dispatch!(lease.leased().vdaf(), (vdaf, VdafType, VERIFY_KEY_LENGTH, DpStrategy) => {
                     self.step_collection_job_generic::<
                         VERIFY_KEY_LENGTH,
                         C,
                         TimeInterval,
-                        NoStrategy,
+                        DpStrategy,
                         VdafType
                     >(datastore, Arc::new(vdaf), lease)
                     .await
                 })
             }
             task::QueryType::FixedSize { .. } => {
-                vdaf_dispatch!(lease.leased().vdaf(), (vdaf, VdafType, VERIFY_KEY_LENGTH) => {
+                vdaf_dispatch!(lease.leased().vdaf(), (vdaf, VdafType, VERIFY_KEY_LENGTH, DpStrategy) => {
                     self.step_collection_job_generic::<
                         VERIFY_KEY_LENGTH,
                         C,
                         FixedSize,
-                        NoStrategy,
+                        DpStrategy,
                         VdafType
                     >(datastore, Arc::new(vdaf), lease)
                     .await

@@ -19,7 +19,6 @@ use rstest_reuse;
 use janus_core::test_util::dummy_vdaf;
 
 pub mod datastore;
-pub mod dp;
 pub mod query_type;
 pub mod task;
 pub mod taskprov;

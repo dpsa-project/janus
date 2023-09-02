@@ -10,12 +10,13 @@ use crate::{
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use janus_aggregator_core::{
     datastore::{self, Datastore},
-    dp::{DpStrategyInstance, NoStrategy},
     task::Task,
     taskprov::PeerAggregator,
     SecretBytes,
 };
-use janus_core::{hpke::generate_hpke_config_and_private_key, time::Clock};
+use janus_core::{hpke::generate_hpke_config_and_private_key, time::Clock,
+                 dp::{DpStrategyInstance, NoDifferentialPrivacy},
+};
 use janus_messages::HpkeConfigId;
 use janus_messages::{
     query_type::Code as SupportedQueryType, Duration, HpkeAeadId, HpkeKdfId, HpkeKemId, Role,
@@ -153,7 +154,7 @@ pub(super) async fn post_task<C: Clock>(
         HpkeAeadId::Aes128Gcm,
     )]);
 
-    let dp_strategy = DpStrategyInstance::NoDp(NoStrategy {});
+    let dp_strategy = DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {});
 
     let task = Arc::new(
         Task::new(

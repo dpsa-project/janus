@@ -1,9 +1,10 @@
 //! Shared parameters for a DAP task.
 
-use crate::{dp::DpStrategyInstance, dp::NoStrategy, SecretBytes};
+use crate::{SecretBytes};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use derivative::Derivative;
 use janus_core::{
+    dp::DpStrategyInstance, dp::NoDifferentialPrivacy, 
     hpke::{generate_hpke_config_and_private_key, HpkeKeypair},
     task::{url_ensure_trailing_slash, AuthenticationToken, VdafInstance},
     time::TimeExt,
@@ -662,13 +663,13 @@ impl<'de> Deserialize<'de> for Task {
 #[cfg_attr(docsrs, doc(cfg(feature = "test-util")))]
 pub mod test_util {
     use crate::{
-        task::{NoStrategy, QueryType, Task},
+        task::{NoDifferentialPrivacy, QueryType, Task},
         SecretBytes,
     };
     use janus_core::{
         hpke::{test_util::generate_test_hpke_config_and_private_key, HpkeKeypair},
         task::{AuthenticationToken, VdafInstance, VERIFY_KEY_LENGTH},
-        time::DurationExt,
+        time::DurationExt, dp::DpStrategyInstance,
     };
     use janus_messages::{Duration, HpkeConfig, HpkeConfigId, Role, TaskId, Time};
     use rand::{distributions::Standard, random, thread_rng, Rng};
@@ -743,7 +744,7 @@ pub mod test_util {
                     Vec::from([random(), AuthenticationToken::DapAuth(random())]),
                     collector_auth_tokens,
                     Vec::from([aggregator_keypair_0, aggregator_keypair_1]),
-                    crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
+                    DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
                 )
                 .unwrap(),
             )
@@ -948,7 +949,7 @@ mod tests {
             Vec::from([random()]),
             Vec::new(),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
+            crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap_err();
 
@@ -971,7 +972,7 @@ mod tests {
             Vec::from([random()]),
             Vec::from([random()]),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
+            crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap();
 
@@ -994,7 +995,7 @@ mod tests {
             Vec::from([random()]),
             Vec::new(),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
+            crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap();
 
@@ -1017,7 +1018,7 @@ mod tests {
             Vec::from([random()]),
             Vec::from([random()]),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
+            crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap_err();
     }
@@ -1042,7 +1043,7 @@ mod tests {
             Vec::from([random()]),
             Vec::from([random()]),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
+            crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap();
 
@@ -1141,7 +1142,7 @@ mod tests {
                     ),
                     HpkePrivateKey::new(b"aggregator hpke private key".to_vec()),
                 )],
-                crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
+                crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
             )
             .unwrap(),
             &[
@@ -1329,7 +1330,7 @@ mod tests {
                     ),
                     HpkePrivateKey::new(b"aggregator hpke private key".to_vec()),
                 )],
-                crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
+                crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
             )
             .unwrap(),
             &[

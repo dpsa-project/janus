@@ -8,7 +8,6 @@ use self::models::{
     ReportAggregationState, ReportAggregationStateCode, SqlInterval,
 };
 use crate::{
-    dp::DpStrategyInstance,
     query_type::{AccumulableQueryType, CollectableQueryType},
     task::{self, Task},
     taskprov::{self, PeerAggregator},
@@ -18,6 +17,7 @@ use anyhow::anyhow;
 use chrono::NaiveDateTime;
 use futures::future::try_join_all;
 use janus_core::{
+    dp::{DpStrategyInstance, NoDifferentialPrivacy},
     hpke::{HpkeKeypair, HpkePrivateKey},
     task::{AuthenticationToken, VdafInstance},
     time::{Clock, TimeExt},
@@ -1053,7 +1053,7 @@ impl<C: Clock> Transaction<'_, C> {
             )?));
         }
 
-        let dp_strategy = DpStrategyInstance::NoDp(crate::dp::NoStrategy {});
+        let dp_strategy = DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {});
 
         let task = Task::new_without_validation(
             *task_id,

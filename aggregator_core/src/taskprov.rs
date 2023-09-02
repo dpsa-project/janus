@@ -1,11 +1,13 @@
 use crate::{
-    dp::DpStrategyInstance,
     task::{self, Error, QueryType},
     SecretBytes,
 };
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use derivative::Derivative;
-use janus_core::task::{AuthenticationToken, VdafInstance};
+use janus_core::{
+    dp::{DpStrategyInstance, NoDifferentialPrivacy},
+    task::{AuthenticationToken, VdafInstance}
+};
 use janus_messages::{Duration, HpkeConfig, Role, TaskId, Time};
 use lazy_static::lazy_static;
 use rand::{distributions::Standard, prelude::Distribution};
@@ -304,7 +306,7 @@ impl Task {
             Vec::new(),
             Vec::new(),
             Vec::new(),
-            DpStrategyInstance::NoDp(crate::dp::NoStrategy {}),
+            DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         ));
         task.validate()?;
         Ok(task)
