@@ -1049,20 +1049,26 @@ enum VdafOps {
     Fake(Arc<dummy_vdaf::Vdaf>),
 }
 
+macro_rules! strategy_alias {
+    (false, $DpStrategy:ident, $type:ty) => {};
+    (true, $DpStrategy:ident, $type:ty) => {
+        type $DpStrategy = $type;
+    };
+}
+
 /// Emits a match block dispatching on a [`VdafOps`] object. Takes a `&VdafOps` as the first
 /// argument, followed by a pseudo-pattern and body. The pseudo-pattern takes variable names for the
 /// constructed VDAF and the verify key, a type alias name that the block can use to explicitly
 /// specify the VDAF's type, and the name of a const that will be set to the VDAF's verify key
 /// length, also for explicitly specifying type parameters.
-
 macro_rules! vdaf_ops_dispatch {
-    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident, $DpStrategy:ident) => $body:tt) => {
+    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident, $DpStrategy:ident, $bool:tt) => $body:tt) => {
         match $vdaf_ops {
             crate::aggregator::VdafOps::Prio3Count(vdaf, verify_key) => {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Count;
-                type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                strategy_alias!($bool, $DpStrategy, janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1071,7 +1077,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;
-                type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                strategy_alias!($bool, $DpStrategy, janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1080,7 +1086,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Sum;
-                type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                strategy_alias!($bool, $DpStrategy, janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1089,7 +1095,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;
-                type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                strategy_alias!($bool, $DpStrategy, janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1098,7 +1104,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Histogram;
-                type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                strategy_alias!($bool, $DpStrategy, janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1109,7 +1115,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $verify_key = verify_key;
                 type $Vdaf =
                     ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>;
-                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                strategy_alias!($bool, $DpStrategy, ::prio::dp::deistributions::ZCdpDiscreteGaussian);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1120,7 +1126,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $verify_key = verify_key;
                 type $Vdaf =
                     ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>;
-                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                strategy_alias!($bool, $DpStrategy, ::prio::dp::deistributions::ZCdpDiscreteGaussian);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1131,7 +1137,7 @@ macro_rules! vdaf_ops_dispatch {
                 let $verify_key = verify_key;
                 type $Vdaf =
                     ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>;
-                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                strategy_alias!($bool, $DpStrategy, ::prio::dp::deistributions::ZCdpDiscreteGaussian);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -1149,14 +1155,17 @@ macro_rules! vdaf_ops_dispatch {
                 let $vdaf = vdaf;
                 let $verify_key = &VerifyKey::new([]);
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
-                type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                strategy_alias!($bool, $DpStrategy, janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = 0;
                 $body
             }
         }
     };
 
-    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident) => $body:tt) => {vdaf_ops_dispatch!($vdaf_ops, ($vdaf, $verify_key, $Vdaf, $VERIFY_KEY_LENGTH, DONTUSETHIS) => $body)};
+    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident) => $body:tt) => {
+        vdaf_ops_dispatch!($vdaf_ops, ($vdaf, $verify_key, $Vdaf, $VERIFY_KEY_LENGTH, DONTUSETHIS, false) => $body)};
+    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident, $strat:ident) => $body:tt) => {
+        vdaf_ops_dispatch!($vdaf_ops, ($vdaf, $verify_key, $Vdaf, $VERIFY_KEY_LENGTH, $strat, true) => $body)};
 }
 
 // macro_rules! vdaf_ops_dispatch {
