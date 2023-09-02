@@ -2769,7 +2769,7 @@ impl VdafOps {
     async fn handle_aggregate_share_generic<
         const SEED_SIZE: usize,
         Q: CollectableQueryType,
-        S: DifferentialPrivacyStrategy + TryFrom<DpStrategyInstance>,
+        S: DifferentialPrivacyStrategy + TryFrom<DpStrategyInstance> + Send,
         A: vdaf::AggregatorWithNoise<SEED_SIZE, 16, S> + Send + Sync + 'static,
         C: Clock,
     >(
@@ -2892,12 +2892,15 @@ impl VdafOps {
                                 .await
                                 .map_err(|e| datastore::Error::User(e.into()))?;
 
+                            let strategy = S::try_from(task.dp_strategy().clone())
+                                .map_err(|_| datastore::Error::DifferentialPrivacy(format!("The strategy is not compatible with the chosen VDAF.")))?;
+
                             vdaf.add_noise_to_agg_share(
-                                &S::try_from(task.dp_strategy().clone())?,
+                                &strategy,
                                 &aggregation_param,
                                 &mut helper_aggregate_share,
                                 report_count.try_into()?,
-                            );
+                            ).map_err(|e| datastore::Error::DifferentialPrivacy(format!("Error when adding noise to aggregate share: {e}")))?;
 
                             // Now that we are satisfied that the request is serviceable, we consume
                             // a query by recording the aggregate share request parameters and the
