@@ -1,4 +1,5 @@
 use crate::{
+    dp::DpStrategyInstance,
     task::{self, Error, QueryType},
     SecretBytes,
 };
@@ -303,6 +304,7 @@ impl Task {
             Vec::new(),
             Vec::new(),
             Vec::new(),
+            DpStrategyInstance::NoDp(crate::dp::NoStrategy {}),
         ));
         task.validate()?;
         Ok(task)

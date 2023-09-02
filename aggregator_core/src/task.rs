@@ -1,6 +1,6 @@
 //! Shared parameters for a DAP task.
 
-use crate::{SecretBytes, dp::DpStrategyInstance};
+use crate::{dp::DpStrategyInstance, dp::NoStrategy, SecretBytes};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use derivative::Derivative;
 use janus_core::{
@@ -137,6 +137,8 @@ pub struct Task {
     collector_auth_tokens: Vec<AuthenticationToken>,
     /// HPKE configurations & private keys used by this aggregator to decrypt client reports.
     hpke_keys: HashMap<HpkeConfigId, HpkeKeypair>,
+    /// The DP strategy this task uses.
+    dp_strategy: DpStrategyInstance,
 }
 
 impl Task {
@@ -160,6 +162,7 @@ impl Task {
         aggregator_auth_tokens: Vec<AuthenticationToken>,
         collector_auth_tokens: Vec<AuthenticationToken>,
         hpke_keys: I,
+        dp_strategy: DpStrategyInstance,
     ) -> Result<Self, Error> {
         let task = Self::new_without_validation(
             task_id,
@@ -179,6 +182,7 @@ impl Task {
             aggregator_auth_tokens,
             collector_auth_tokens,
             hpke_keys,
+            dp_strategy,
         );
         task.validate()?;
         Ok(task)
@@ -205,6 +209,7 @@ impl Task {
         aggregator_auth_tokens: Vec<AuthenticationToken>,
         collector_auth_tokens: Vec<AuthenticationToken>,
         hpke_keys: I,
+        dp_strategy: DpStrategyInstance,
     ) -> Self {
         // Compute hpke_configs mapping cfg.id -> (cfg, key).
         let hpke_keys: HashMap<HpkeConfigId, HpkeKeypair> = hpke_keys
@@ -233,6 +238,7 @@ impl Task {
             aggregator_auth_tokens,
             collector_auth_tokens,
             hpke_keys,
+            dp_strategy,
         }
     }
 
@@ -375,6 +381,11 @@ impl Task {
     /// Retrieves the HPKE keys in use associated with this task.
     pub fn hpke_keys(&self) -> &HashMap<HpkeConfigId, HpkeKeypair> {
         &self.hpke_keys
+    }
+
+    /// Retrieves the DP strategy this task uses.
+    pub fn dp_strategy(&self) -> &DpStrategyInstance {
+        &self.dp_strategy
     }
 
     /// Retrieve the "current" HPKE in use for this task.
@@ -594,7 +605,7 @@ impl Serialize for Task {
             aggregator_auth_tokens: self.aggregator_auth_tokens.clone(),
             collector_auth_tokens: self.collector_auth_tokens.clone(),
             hpke_keys,
-            dp_strategy: todo!(),
+            dp_strategy: self.dp_strategy.clone(),
         }
         .serialize(serializer)
     }
@@ -634,6 +645,7 @@ impl TryFrom<SerializedTask> for Task {
             serialized_task.aggregator_auth_tokens,
             serialized_task.collector_auth_tokens,
             serialized_task.hpke_keys,
+            serialized_task.dp_strategy,
         )
     }
 }
@@ -650,7 +662,7 @@ impl<'de> Deserialize<'de> for Task {
 #[cfg_attr(docsrs, doc(cfg(feature = "test-util")))]
 pub mod test_util {
     use crate::{
-        task::{QueryType, Task},
+        task::{NoStrategy, QueryType, Task},
         SecretBytes,
     };
     use janus_core::{
@@ -731,6 +743,7 @@ pub mod test_util {
                     Vec::from([random(), AuthenticationToken::DapAuth(random())]),
                     collector_auth_tokens,
                     Vec::from([aggregator_keypair_0, aggregator_keypair_1]),
+                    crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
                 )
                 .unwrap(),
             )
@@ -935,6 +948,7 @@ mod tests {
             Vec::from([random()]),
             Vec::new(),
             Vec::from([generate_test_hpke_config_and_private_key()]),
+            crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
         )
         .unwrap_err();
 
@@ -957,6 +971,7 @@ mod tests {
             Vec::from([random()]),
             Vec::from([random()]),
             Vec::from([generate_test_hpke_config_and_private_key()]),
+            crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
         )
         .unwrap();
 
@@ -979,6 +994,7 @@ mod tests {
             Vec::from([random()]),
             Vec::new(),
             Vec::from([generate_test_hpke_config_and_private_key()]),
+            crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
         )
         .unwrap();
 
@@ -1001,6 +1017,7 @@ mod tests {
             Vec::from([random()]),
             Vec::from([random()]),
             Vec::from([generate_test_hpke_config_and_private_key()]),
+            crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
         )
         .unwrap_err();
     }
@@ -1025,6 +1042,7 @@ mod tests {
             Vec::from([random()]),
             Vec::from([random()]),
             Vec::from([generate_test_hpke_config_and_private_key()]),
+            crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
         )
         .unwrap();
 
@@ -1123,6 +1141,7 @@ mod tests {
                     ),
                     HpkePrivateKey::new(b"aggregator hpke private key".to_vec()),
                 )],
+                crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
             )
             .unwrap(),
             &[
@@ -1310,6 +1329,7 @@ mod tests {
                     ),
                     HpkePrivateKey::new(b"aggregator hpke private key".to_vec()),
                 )],
+                crate::dp::DpStrategyInstance::NoDp(NoStrategy {}),
             )
             .unwrap(),
             &[

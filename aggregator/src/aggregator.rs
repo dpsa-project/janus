@@ -32,6 +32,7 @@ use janus_aggregator_core::{
         },
         Datastore, Error as DatastoreError, Transaction,
     },
+    dp::{DpStrategyInstance, NoStrategy},
     query_type::AccumulableQueryType,
     task::{self, Task, VerifyKey},
     taskprov::{self, PeerAggregator},
@@ -65,12 +66,13 @@ use prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded;
 use prio::vdaf::{PrepareTransition, VdafError};
 use prio::{
     codec::{Decode, Encode, ParameterizedDecode},
+    dp::{distributions::ZCdpDiscreteGaussian, DifferentialPrivacyStrategy},
     vdaf::{
         self,
         poplar1::Poplar1,
         prg::PrgSha3,
         prio3::{Prio3, Prio3Count, Prio3Histogram, Prio3Sum, Prio3SumVecMultithreaded},
-    }, dp::{distributions::ZCdpDiscreteGaussian, DifferentialPrivacyStrategy},
+    },
 };
 use reqwest::Client;
 use ring::digest::{digest, SHA256};
@@ -1043,7 +1045,6 @@ enum VdafOps {
         VerifyKey<VERIFY_KEY_LENGTH>,
     ),
     // Poplar1(Arc<Poplar1<PrgSha3, 16>>, VerifyKey<VERIFY_KEY_LENGTH>),
-
     #[cfg(feature = "test-util")]
     Fake(Arc<dummy_vdaf::Vdaf>),
 }
@@ -1133,7 +1134,6 @@ macro_rules! vdaf_ops_dispatch {
             //     const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
             //     $body
             // }
-
             #[cfg(feature = "test-util")]
             crate::aggregator::VdafOps::Fake(vdaf) => {
                 let $vdaf = vdaf;
@@ -2697,30 +2697,46 @@ impl VdafOps {
         req_bytes: &[u8],
         collector_hpke_config: &HpkeConfig,
     ) -> Result<AggregateShare, Error> {
+        macro_rules! strategy_dispatch {
+            ($body:tt) => {
+                match task.dp_strategy() {
+                    DpStrategyInstance::NoDp(s) => {
+                        type DpStrategyType = NoStrategy;
+                        $body
+                    }
+                    DpStrategyInstance::ZCdpDiscreteGaussian(s) => {
+                        type DpStrategyType = ZCdpDiscreteGaussian;
+                        $body
+                    }
+                }
+            };
+        }
         match task.query_type() {
             task::QueryType::TimeInterval => {
                 vdaf_ops_dispatch!(self, (vdaf, _, VdafType, VERIFY_KEY_LENGTH) => {
-                    Self::handle_aggregate_share_generic::<
-                        VERIFY_KEY_LENGTH,
-                        TimeInterval,
-                        _,
-                        VdafType,
-                        _,
-                    >(datastore, clock, task, Arc::clone(vdaf), req_bytes, batch_aggregation_shard_count, collector_hpke_config)
-                    .await
+                    strategy_dispatch!({
+                            Self::handle_aggregate_share_generic::<
+                                VERIFY_KEY_LENGTH,
+                                TimeInterval,
+                                DpStrategyType,
+                                VdafType,
+                                _,
+                            >(datastore, clock, task, Arc::clone(vdaf), req_bytes, batch_aggregation_shard_count, collector_hpke_config)
+                            .await})
                 })
             }
             task::QueryType::FixedSize { .. } => {
                 vdaf_ops_dispatch!(self, (vdaf, _, VdafType, VERIFY_KEY_LENGTH) => {
-                    Self::handle_aggregate_share_generic::<
-                        VERIFY_KEY_LENGTH,
-                        FixedSize,
-                        _,
-                        VdafType,
-                        _,
-                    >(datastore, clock, task, Arc::clone(vdaf), req_bytes, batch_aggregation_shard_count, collector_hpke_config)
-                    .await
-                })
+                    strategy_dispatch!({
+                        Self::handle_aggregate_share_generic::<
+                            VERIFY_KEY_LENGTH,
+                            FixedSize,
+                            DpStrategyType,
+                            VdafType,
+                            _,
+                        >(datastore, clock, task, Arc::clone(vdaf), req_bytes, batch_aggregation_shard_count, collector_hpke_config)
+                        .await
+                })})
             }
         }
     }

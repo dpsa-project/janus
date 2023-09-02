@@ -10,6 +10,7 @@ use crate::{
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use janus_aggregator_core::{
     datastore::{self, Datastore},
+    dp::{DpStrategyInstance, NoStrategy},
     task::Task,
     taskprov::PeerAggregator,
     SecretBytes,
@@ -152,6 +153,8 @@ pub(super) async fn post_task<C: Clock>(
         HpkeAeadId::Aes128Gcm,
     )]);
 
+    let dp_strategy = DpStrategyInstance::NoDp(NoStrategy {});
+
     let task = Arc::new(
         Task::new(
             task_id,
@@ -173,6 +176,7 @@ pub(super) async fn post_task<C: Clock>(
             aggregator_auth_tokens,
             collector_auth_tokens,
             hpke_keys,
+            dp_strategy,
         )
         .map_err(|err| Error::BadRequest(format!("Error constructing task: {err}")))?,
     );
