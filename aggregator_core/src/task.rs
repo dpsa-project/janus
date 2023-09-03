@@ -1,10 +1,10 @@
 //! Shared parameters for a DAP task.
 
-use crate::{SecretBytes};
+use crate::SecretBytes;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use derivative::Derivative;
 use janus_core::{
-    dp::DpStrategyInstance, dp::NoDifferentialPrivacy, 
+    dp::DpStrategyInstance,
     hpke::{generate_hpke_config_and_private_key, HpkeKeypair},
     task::{url_ensure_trailing_slash, AuthenticationToken, VdafInstance},
     time::TimeExt,
@@ -13,7 +13,7 @@ use janus_messages::{
     taskprov, AggregationJobId, CollectionJobId, Duration, HpkeAeadId, HpkeConfig, HpkeConfigId,
     HpkeKdfId, HpkeKemId, Role, TaskId, Time,
 };
-use prio::dp::DifferentialPrivacyStrategy;
+
 use rand::{distributions::Standard, random, thread_rng, Rng};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{array::TryFromSliceError, collections::HashMap};
@@ -663,13 +663,14 @@ impl<'de> Deserialize<'de> for Task {
 #[cfg_attr(docsrs, doc(cfg(feature = "test-util")))]
 pub mod test_util {
     use crate::{
-        task::{NoDifferentialPrivacy, QueryType, Task},
+        task::{QueryType, Task},
         SecretBytes,
     };
     use janus_core::{
+        dp::{DpStrategyInstance, NoDifferentialPrivacy},
         hpke::{test_util::generate_test_hpke_config_and_private_key, HpkeKeypair},
         task::{AuthenticationToken, VdafInstance, VERIFY_KEY_LENGTH},
-        time::DurationExt, dp::DpStrategyInstance,
+        time::DurationExt,
     };
     use janus_messages::{Duration, HpkeConfig, HpkeConfigId, Role, TaskId, Time};
     use rand::{distributions::Standard, random, thread_rng, Rng};
@@ -898,6 +899,7 @@ mod tests {
     };
     use assert_matches::assert_matches;
     use janus_core::{
+        dp::{DpStrategyInstance, NoDifferentialPrivacy},
         hpke::{test_util::generate_test_hpke_config_and_private_key, HpkeKeypair, HpkePrivateKey},
         task::{AuthenticationToken, VERIFY_KEY_LENGTH},
         test_util::roundtrip_encoding,
@@ -949,7 +951,7 @@ mod tests {
             Vec::from([random()]),
             Vec::new(),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
+            DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap_err();
 
@@ -972,7 +974,7 @@ mod tests {
             Vec::from([random()]),
             Vec::from([random()]),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
+            DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap();
 
@@ -995,7 +997,7 @@ mod tests {
             Vec::from([random()]),
             Vec::new(),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
+            DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap();
 
@@ -1018,7 +1020,7 @@ mod tests {
             Vec::from([random()]),
             Vec::from([random()]),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
+            DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap_err();
     }
@@ -1043,7 +1045,7 @@ mod tests {
             Vec::from([random()]),
             Vec::from([random()]),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
+            DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap();
 
@@ -1142,7 +1144,7 @@ mod tests {
                     ),
                     HpkePrivateKey::new(b"aggregator hpke private key".to_vec()),
                 )],
-                crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
+                DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
             )
             .unwrap(),
             &[
@@ -1330,7 +1332,7 @@ mod tests {
                     ),
                     HpkePrivateKey::new(b"aggregator hpke private key".to_vec()),
                 )],
-                crate::dp::DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
+                DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
             )
             .unwrap(),
             &[

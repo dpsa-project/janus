@@ -23,6 +23,7 @@ use janus_aggregator_core::{
     SecretBytes,
 };
 use janus_core::{
+    dp::{DpStrategyInstance, NoDifferentialPrivacy},
     hpke::{
         generate_hpke_config_and_private_key,
         test_util::{
@@ -1771,6 +1772,7 @@ fn task_resp_serialization() {
             ),
             HpkePrivateKey::new(b"unused".to_vec()),
         ))],
+        DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
     )
     .unwrap();
     assert_tokens(
