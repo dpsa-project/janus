@@ -1,6 +1,7 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use janus_aggregator_core::task::{QueryType, Task};
 use janus_core::{
+    dp::{DpStrategyInstance, NoDifferentialPrivacy},
     hpke::{generate_hpke_config_and_private_key, HpkeKeypair},
     task::VdafInstance,
 };
@@ -8,7 +9,10 @@ use janus_messages::{
     query_type::{FixedSize, QueryType as _, TimeInterval},
     HpkeAeadId, HpkeConfigId, HpkeKdfId, HpkeKemId, Role, TaskId, Time,
 };
-use prio::codec::Encode;
+use prio::{
+    codec::Encode,
+    dp::{distributions::ZCdpDiscreteGaussian, DifferentialPrivacyStrategy, Rational, ZCdpBudget},
+};
 use rand::random;
 use serde::{de::Visitor, Deserialize, Serialize};
 use std::{
@@ -218,6 +222,39 @@ impl From<VdafObject> for VdafInstance {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum DpStrategyObject {
+    NoDpStrategy,
+    ZCdpDiscreteGaussian { epsilon: NumberAsString<Rational> },
+}
+
+impl From<DpStrategyInstance> for DpStrategyObject {
+    fn from(strat: DpStrategyInstance) -> Self {
+        match strat {
+            DpStrategyInstance::NoDifferentialPrivacy(_) => DpStrategyObject::NoDpStrategy,
+            DpStrategyInstance::ZCdpDiscreteGaussian(s) => DpStrategyObject::ZCdpDiscreteGaussian {
+                epsilon: NumberAsString(s.budget.get_epsilon()),
+            },
+        }
+    }
+}
+
+impl From<DpStrategyObject> for DpStrategyInstance {
+    fn from(strat: DpStrategyObject) -> Self {
+        match strat {
+            DpStrategyObject::NoDpStrategy => {
+                DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})
+            }
+            DpStrategyObject::ZCdpDiscreteGaussian { epsilon } => {
+                DpStrategyInstance::ZCdpDiscreteGaussian(ZCdpDiscreteGaussian::from_budget(
+                    ZCdpBudget::new(epsilon.0),
+                ))
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct BadRoleError;
 
@@ -268,6 +305,7 @@ pub struct AggregatorAddTaskRequest {
     pub time_precision: u64,           // in seconds
     pub collector_hpke_config: String, // in unpadded base64url
     pub task_expiration: Option<u64>,  // in seconds since the epoch
+    pub dp_strategy: DpStrategyInstance,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -313,6 +351,7 @@ impl From<Task> for AggregatorAddTaskRequest {
             collector_hpke_config: URL_SAFE_NO_PAD
                 .encode(task.collector_hpke_config().unwrap().get_encoded()),
             task_expiration: task.task_expiration().map(Time::as_seconds_since_epoch),
+            dp_strategy: task.dp_strategy().clone(),
         }
     }
 }

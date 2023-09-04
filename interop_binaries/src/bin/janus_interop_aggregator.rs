@@ -86,6 +86,8 @@ async fn handle_add_task(
         }
     };
 
+    let dp_strategy = request.dp_strategy.into();
+
     let task = Task::new(
         request.task_id,
         request.leader,
@@ -106,6 +108,7 @@ async fn handle_add_task(
         Vec::from([leader_authentication_token]),
         collector_authentication_tokens,
         [hpke_keypair],
+        dp_strategy,
     )
     .context("error constructing task")?;
 
