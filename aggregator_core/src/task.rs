@@ -107,6 +107,8 @@ pub struct Task {
     helper_aggregator_endpoint: Url,
     /// The query type this task uses to generate batches.
     query_type: QueryType,
+    /// The DP strategy this task uses.
+    dp_strategy: DpStrategyInstance,
     /// The VDAF this task executes.
     vdaf: VdafInstance,
     /// The role performed by the aggregator.
@@ -138,8 +140,6 @@ pub struct Task {
     collector_auth_tokens: Vec<AuthenticationToken>,
     /// HPKE configurations & private keys used by this aggregator to decrypt client reports.
     hpke_keys: HashMap<HpkeConfigId, HpkeKeypair>,
-    /// The DP strategy this task uses.
-    dp_strategy: DpStrategyInstance,
 }
 
 impl Task {
@@ -1150,7 +1150,7 @@ mod tests {
             &[
                 Token::Struct {
                     name: "SerializedTask",
-                    len: 17,
+                    len: 18,
                 },
                 Token::Str("task_id"),
                 Token::Some,
@@ -1288,6 +1288,10 @@ mod tests {
                 Token::Str("YWdncmVnYXRvciBocGtlIHByaXZhdGUga2V5"),
                 Token::StructEnd,
                 Token::SeqEnd,
+                Token::Str("dp_strategy"),
+                Token::NewtypeVariant { name: "DpStrategyInstance", variant: "NoDifferentialPrivacy", },
+                Token::Struct { name: "NoDifferentialPrivacy", len: 0, },
+                Token::StructEnd,
                 Token::StructEnd,
             ],
         );
@@ -1338,7 +1342,7 @@ mod tests {
             &[
                 Token::Struct {
                     name: "SerializedTask",
-                    len: 17,
+                    len: 18,
                 },
                 Token::Str("task_id"),
                 Token::Some,
@@ -1476,6 +1480,10 @@ mod tests {
                 Token::Str("YWdncmVnYXRvciBocGtlIHByaXZhdGUga2V5"),
                 Token::StructEnd,
                 Token::SeqEnd,
+                Token::Str("dp_strategy"),
+                Token::NewtypeVariant { name: "DpStrategyInstance", variant: "NoDifferentialPrivacy", },
+                Token::Struct { name: "NoDifferentialPrivacy", len: 0, },
+                Token::StructEnd,
                 Token::StructEnd,
             ],
         );
