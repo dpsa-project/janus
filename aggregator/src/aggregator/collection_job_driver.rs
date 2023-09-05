@@ -5,7 +5,6 @@ use crate::aggregator::{
     http_handlers::AGGREGATE_SHARES_ROUTE, query_type::CollectableQueryType,
     send_request_to_helper, Error,
 };
-use crate::strategy_alias;
 use derivative::Derivative;
 use futures::future::{try_join_all, BoxFuture};
 use janus_aggregator_core::{
@@ -218,15 +217,23 @@ impl CollectionJobDriver {
                 .await
                 .map_err(|e| datastore::Error::User(e.into()))?;
 
-        let strategy = S::try_from(task.dp_strategy().clone())
-            .map_err(|_| datastore::Error::DifferentialPrivacy(format!("The strategy is not compatible with the chosen VDAF.")))?;
+        let strategy = S::try_from(task.dp_strategy().clone()).map_err(|_| {
+            datastore::Error::DifferentialPrivacy(format!(
+                "The strategy is not compatible with the chosen VDAF."
+            ))
+        })?;
 
         vdaf.add_noise_to_agg_share(
             &strategy,
             &collection_job.aggregation_parameter(),
             &mut leader_aggregate_share,
             report_count.try_into()?,
-        ).map_err(|e| datastore::Error::DifferentialPrivacy(format!("Error when adding noise to aggregate share: {e}")))?;
+        )
+        .map_err(|e| {
+            datastore::Error::DifferentialPrivacy(format!(
+                "Error when adding noise to aggregate share: {e}"
+            ))
+        })?;
 
         // Send an aggregate share request to the helper.
         let req = AggregateShareReq::<Q>::new(

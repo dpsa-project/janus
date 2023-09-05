@@ -110,3 +110,11 @@ impl AggregatorWithNoise<16, 16, NoDifferentialPrivacy>
         Ok(())
     }
 }
+
+#[macro_export]
+macro_rules! strategy_alias {
+    (false, $DpStrategy:ident, $type:ty) => {};
+    (true, $DpStrategy:ident, $type:ty) => {
+        type $DpStrategy = $type;
+    };
+}

@@ -2,7 +2,8 @@
 
 use prio::{
     codec::{CodecError, Decode, Encode},
-    vdaf::{self, Aggregatable, PrepareTransition, VdafError}, dp::distributions::ZCdpDiscreteGaussian,
+    dp::distributions::ZCdpDiscreteGaussian,
+    vdaf::{self, Aggregatable, PrepareTransition, VdafError},
 };
 use std::fmt::Debug;
 use std::io::Cursor;
@@ -93,7 +94,7 @@ impl vdaf::Vdaf for Vdaf {
     }
 }
 
-impl vdaf::AggregatorWithNoise<0,16,ZCdpDiscreteGaussian> for Vdaf {
+impl vdaf::AggregatorWithNoise<0, 16, ZCdpDiscreteGaussian> for Vdaf {
     fn add_noise_to_agg_share(
         &self,
         _dp_strategy: &ZCdpDiscreteGaussian,

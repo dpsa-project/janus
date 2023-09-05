@@ -104,42 +104,66 @@ macro_rules! vdaf_dispatch_impl_base {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Prio3Count => {
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Count;
-                strategy_alias!($flag, $DpStrategy, ::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!(
+                    $flag,
+                    $DpStrategy,
+                    ::janus_core::dp::NoDifferentialPrivacy
+                );
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
 
             ::janus_core::task::VdafInstance::Prio3CountVec { length } => {
                 type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;;
-                strategy_alias!($flag, $DpStrategy, ::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!(
+                    $flag,
+                    $DpStrategy,
+                    ::janus_core::dp::NoDifferentialPrivacy
+                );
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
 
             ::janus_core::task::VdafInstance::Prio3Sum { bits } => {
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Sum;;
-                strategy_alias!($flag, $DpStrategy, ::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!(
+                    $flag,
+                    $DpStrategy,
+                    ::janus_core::dp::NoDifferentialPrivacy
+                );
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
 
             ::janus_core::task::VdafInstance::Prio3SumVec { bits, length } => {
                 type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;;
-                strategy_alias!($flag, $DpStrategy, ::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!(
+                    $flag,
+                    $DpStrategy,
+                    ::janus_core::dp::NoDifferentialPrivacy
+                );
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
 
             ::janus_core::task::VdafInstance::Prio3Histogram { buckets } => {
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Histogram;;
-                strategy_alias!($flag, $DpStrategy, ::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!(
+                    $flag,
+                    $DpStrategy,
+                    ::janus_core::dp::NoDifferentialPrivacy
+                );
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
 
             ::janus_core::task::VdafInstance::Poplar1 { bits } => {
                 type $Vdaf = ::prio::vdaf::poplar1::Poplar1<::prio::vdaf::prg::PrgSha3, 16>;;
-                strategy_alias!($flag, $DpStrategy, ::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!(
+                    $flag,
+                    $DpStrategy,
+                    ::janus_core::dp::NoDifferentialPrivacy
+                );
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -154,7 +178,11 @@ macro_rules! vdaf_dispatch_impl_base {
             ::janus_core::task::VdafInstance::Prio3Count => {
                 let $vdaf = ::prio::vdaf::prio3::Prio3::new_count(2)?;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Count;;
-                strategy_alias!($flag, $DpStrategy, ::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!(
+                    $flag,
+                    $DpStrategy,
+                    ::janus_core::dp::NoDifferentialPrivacy
+                );
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -163,7 +191,11 @@ macro_rules! vdaf_dispatch_impl_base {
                 // Prio3CountVec is implemented as a 1-bit sum vec
                 let $vdaf = ::prio::vdaf::prio3::Prio3::new_sum_vec_multithreaded(2, 1, *length)?;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;;
-                strategy_alias!($flag, $DpStrategy, ::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!(
+                    $flag,
+                    $DpStrategy,
+                    ::janus_core::dp::NoDifferentialPrivacy
+                );
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -171,7 +203,11 @@ macro_rules! vdaf_dispatch_impl_base {
             ::janus_core::task::VdafInstance::Prio3Sum { bits } => {
                 let $vdaf = ::prio::vdaf::prio3::Prio3::new_sum(2, *bits)?;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Sum;;
-                strategy_alias!($flag, $DpStrategy, ::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!(
+                    $flag,
+                    $DpStrategy,
+                    ::janus_core::dp::NoDifferentialPrivacy
+                );
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -180,7 +216,11 @@ macro_rules! vdaf_dispatch_impl_base {
                 let $vdaf =
                     ::prio::vdaf::prio3::Prio3::new_sum_vec_multithreaded(2, *bits, *length)?;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;;
-                strategy_alias!($flag, $DpStrategy, ::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!(
+                    $flag,
+                    $DpStrategy,
+                    ::janus_core::dp::NoDifferentialPrivacy
+                );
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -188,7 +228,11 @@ macro_rules! vdaf_dispatch_impl_base {
             ::janus_core::task::VdafInstance::Prio3Histogram { length } => {
                 let $vdaf = ::prio::vdaf::prio3::Prio3::new_histogram(2, *length)?;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Histogram;;
-                strategy_alias!($flag, $DpStrategy, ::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!(
+                    $flag,
+                    $DpStrategy,
+                    ::janus_core::dp::NoDifferentialPrivacy
+                );
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -196,7 +240,11 @@ macro_rules! vdaf_dispatch_impl_base {
             ::janus_core::task::VdafInstance::Poplar1 { bits } => {
                 let $vdaf = ::prio::vdaf::poplar1::Poplar1::new_sha3(*bits);
                 type $Vdaf = ::prio::vdaf::poplar1::Poplar1<::prio::vdaf::prg::PrgSha3, 16>;;
-                strategy_alias!($flag, $DpStrategy, ::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!(
+                    $flag,
+                    $DpStrategy,
+                    ::janus_core::dp::NoDifferentialPrivacy
+                );
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -301,7 +349,7 @@ macro_rules! vdaf_dispatch_impl_test_util {
             ::janus_core::task::VdafInstance::Fake => {
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
                 ;
-                strategy_alias!($flag, $DpStrategy,_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!($flag, $DpStrategy,_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LEN: usize = 0;
                 $body
             }
@@ -309,7 +357,7 @@ macro_rules! vdaf_dispatch_impl_test_util {
             ::janus_core::task::VdafInstance::FakeFailsPrepInit => {
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
                 ;
-                strategy_alias!($flag, $DpStrategy,_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!($flag, $DpStrategy,_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LEN: usize = 0;
                 $body
             }
@@ -317,7 +365,7 @@ macro_rules! vdaf_dispatch_impl_test_util {
             ::janus_core::task::VdafInstance::FakeFailsPrepStep => {
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
                 ;
-                strategy_alias!($flag, $DpStrategy,_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!($flag, $DpStrategy,_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LEN: usize = 0;
                 $body
             }
@@ -333,7 +381,7 @@ macro_rules! vdaf_dispatch_impl_test_util {
                 let $vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf::new();
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
                 ;
-                strategy_alias!($flag, $DpStrategy,::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!($flag, $DpStrategy,::janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LEN: usize = 0;
                 $body
             }
@@ -348,7 +396,7 @@ macro_rules! vdaf_dispatch_impl_test_util {
                 );
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
                 ;
-                strategy_alias!($flag, $DpStrategy,::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!($flag, $DpStrategy,::janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LEN: usize = 0;
                 $body
             }
@@ -370,7 +418,7 @@ macro_rules! vdaf_dispatch_impl_test_util {
                         );
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
                 ;
-                strategy_alias!($flag, $DpStrategy,::janus_core::dp::NoDifferentialPrivacy);
+                ::janus_core::strategy_alias!($flag, $DpStrategy,::janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LEN: usize = 0;
                 $body
             }
@@ -791,7 +839,6 @@ pub fn url_ensure_trailing_slash(mut url: Url) -> Url {
 mod tests {
     use super::{AuthenticationToken, VdafInstance};
     use serde_test::{assert_tokens, Token};
-
     #[test]
     fn vdaf_serialization() {
         // The `Vdaf` type must have a stable serialization, as it gets stored in a JSON database

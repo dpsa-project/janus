@@ -3,7 +3,6 @@ use crate::aggregator::{
     aggregation_job_writer::AggregationJobWriter, http_handlers::AGGREGATION_JOB_ROUTE,
     query_type::CollectableQueryType, send_request_to_helper,
 };
-use crate::strategy_alias;
 use anyhow::{anyhow, Context as _, Result};
 use derivative::Derivative;
 use futures::future::{try_join_all, BoxFuture, FutureExt};
