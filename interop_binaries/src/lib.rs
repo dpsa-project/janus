@@ -284,7 +284,7 @@ impl From<VdafObject> for VdafInstance {
                 length,
                 dp_strategy,
             } => VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
-                length: lengsth.0,
+                length: length.0,
                 dp_strategy,
             },
         }
