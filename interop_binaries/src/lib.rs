@@ -135,6 +135,21 @@ pub enum VdafObject {
     Prio3FixedPoint64BitBoundedL2VecSum {
         length: NumberAsString<usize>,
     },
+    #[cfg(feature = "fpvec_bounded_l2")]
+    Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+        length: NumberAsString<usize>,
+        dp_strategy: prio::dp::distributions::ZCdpDiscreteGaussian,
+    },
+    #[cfg(feature = "fpvec_bounded_l2")]
+    Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+        length: NumberAsString<usize>,
+        dp_strategy: prio::dp::distributions::ZCdpDiscreteGaussian,
+    },
+    #[cfg(feature = "fpvec_bounded_l2")]
+    Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+        length: NumberAsString<usize>,
+        dp_strategy: prio::dp::distributions::ZCdpDiscreteGaussian,
+    },
 }
 
 impl From<VdafInstance> for VdafObject {
@@ -179,6 +194,33 @@ impl From<VdafInstance> for VdafObject {
                     length: NumberAsString(length),
                 }
             }
+
+            #[cfg(feature = "fpvec_bounded_l2")]
+            VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            } => VdafObject::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+                length: NumberAsString(length),
+                dp_strategy,
+            },
+
+            #[cfg(feature = "fpvec_bounded_l2")]
+            VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            } => VdafObject::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+                length: NumberAsString(length),
+                dp_strategy,
+            },
+
+            #[cfg(feature = "fpvec_bounded_l2")]
+            VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            } => VdafObject::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+                length: NumberAsString(length),
+                dp_strategy,
+            },
             _ => panic!("Unsupported VDAF: {vdaf:?}"),
         }
     }
@@ -218,10 +260,37 @@ impl From<VdafObject> for VdafInstance {
             VdafObject::Prio3FixedPoint64BitBoundedL2VecSum { length } => {
                 VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length: length.0 }
             }
+
+            #[cfg(feature = "fpvec_bounded_l2")]
+            VdafObject::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            } => VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+                length: length.0,
+                dp_strategy,
+            },
+
+            #[cfg(feature = "fpvec_bounded_l2")]
+            VdafObject::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            } => VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+                length: length.0,
+                dp_strategy,
+            },
+
+            #[cfg(feature = "fpvec_bounded_l2")]
+            VdafObject::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            } => VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+                length: lengsth.0,
+                dp_strategy,
+            },
         }
     }
 }
-
+/*
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "dp_strategy")]
 pub enum DpStrategyObject {
@@ -254,7 +323,7 @@ impl From<DpStrategyObject> for DpStrategyInstance {
         }
     }
 }
-
+*/
 #[derive(Debug)]
 pub struct BadRoleError;
 
