@@ -326,6 +326,7 @@ async fn run(
         "min_batch_size": measurements.len(),
         "time_precision": TIME_PRECISION,
         "collector_hpke_config": collector_hpke_config_encoded,
+        "dp_strategy": dp_strategy,
     });
     if let Some(max_batch_size) = &max_batch_size {
         helper_add_task_request_body
