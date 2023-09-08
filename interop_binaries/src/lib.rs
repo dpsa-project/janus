@@ -223,16 +223,16 @@ impl From<VdafObject> for VdafInstance {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "dp_strategy")]
 pub enum DpStrategyObject {
-    NoDpStrategy,
+    NoDifferentialPrivacy,
     ZCdpDiscreteGaussian { epsilon: NumberAsString<Rational> },
 }
 
 impl From<DpStrategyInstance> for DpStrategyObject {
     fn from(strat: DpStrategyInstance) -> Self {
         match strat {
-            DpStrategyInstance::NoDifferentialPrivacy(_) => DpStrategyObject::NoDpStrategy,
+            DpStrategyInstance::NoDifferentialPrivacy(_) => DpStrategyObject::NoDifferentialPrivacy,
             DpStrategyInstance::ZCdpDiscreteGaussian(s) => DpStrategyObject::ZCdpDiscreteGaussian {
                 epsilon: NumberAsString(s.budget.get_epsilon()),
             },
@@ -243,7 +243,7 @@ impl From<DpStrategyInstance> for DpStrategyObject {
 impl From<DpStrategyObject> for DpStrategyInstance {
     fn from(strat: DpStrategyObject) -> Self {
         match strat {
-            DpStrategyObject::NoDpStrategy => {
+            DpStrategyObject::NoDifferentialPrivacy => {
                 DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})
             }
             DpStrategyObject::ZCdpDiscreteGaussian { epsilon } => {

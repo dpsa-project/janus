@@ -42,6 +42,7 @@ async fn run(
     vdaf_object: serde_json::Value,
     measurements: &[serde_json::Value],
     aggregation_parameter: &[u8],
+    dp_strategy: serde_json::Value,
 ) -> serde_json::Value {
     install_test_trace_subscriber();
 
@@ -271,6 +272,7 @@ async fn run(
         "min_batch_size": measurements.len(),
         "time_precision": TIME_PRECISION,
         "collector_hpke_config": collector_hpke_config_encoded,
+        "dp_strategy": dp_strategy,
     });
     if let Some(max_batch_size) = &max_batch_size {
         leader_add_task_request_body
@@ -278,6 +280,7 @@ async fn run(
             .unwrap()
             .insert("max_batch_size".to_string(), max_batch_size.clone());
     }
+    println!("request pody{:?}", leader_add_task_request_body);
     let leader_add_task_response = http_client
         .post(
             local_leader_endpoint
@@ -592,6 +595,7 @@ async fn e2e_prio3_count() {
             json!("0"),
         ],
         b"",
+        json!({"dp_strategy": "NoDifferentialPrivacy"}),
     )
     .await;
     assert!(result.is_string());
@@ -612,6 +616,7 @@ async fn e2e_prio3_sum() {
             json!("14"),
         ],
         b"",
+        json!({"dp_strategy": "NoDifferentialPrivacy"}),
     )
     .await;
     assert!(result.is_string());
@@ -629,6 +634,7 @@ async fn e2e_prio3_sum_vec() {
             json!(["10", "0", "0", "0"]),
         ],
         b"",
+        json!({"dp_strategy": "NoDifferentialPrivacy"}),
     )
     .await;
     for element in result.as_array().expect("SumVec result should be an array") {
@@ -653,6 +659,7 @@ async fn e2e_prio3_histogram() {
             json!("5"),
         ],
         b"",
+        json!({"dp_strategy": "NoDifferentialPrivacy"}),
     )
     .await;
     for element in result
@@ -675,6 +682,7 @@ async fn e2e_prio3_count_vec() {
             json!(["1", "0", "0", "0"]),
         ],
         b"",
+        json!({"dp_strategy": "NoDifferentialPrivacy"}),
     )
     .await;
     for element in result
@@ -716,6 +724,7 @@ async fn e2e_prio3_fixed16vec() {
             ]),
         ],
         b"",
+        json!({"dp_strategy": "NoDifferentialPrivacy"}),
     )
     .await;
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
@@ -752,6 +761,7 @@ async fn e2e_prio3_fixed32vec() {
             ]),
         ],
         b"",
+        json!({"dp_strategy": "NoDifferentialPrivacy"}),
     )
     .await;
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
@@ -788,6 +798,7 @@ async fn e2e_prio3_fixed64vec() {
             ]),
         ],
         b"",
+        json!({"dp_strategy": "NoDifferentialPrivacy"}),
     )
     .await;
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
@@ -824,6 +835,7 @@ async fn e2e_prio3_fixed16vec_fixed_size() {
             ]),
         ],
         b"",
+        json!({"dp_strategy": "NoDifferentialPrivacy"}),
     )
     .await;
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
@@ -860,6 +872,7 @@ async fn e2e_prio3_fixed32vec_fixed_size() {
             ]),
         ],
         b"",
+        json!({"dp_strategy": "NoDifferentialPrivacy"}),
     )
     .await;
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
@@ -896,6 +909,7 @@ async fn e2e_prio3_fixed64vec_fixed_size() {
             ]),
         ],
         b"",
+        json!({"dp_strategy": "NoDifferentialPrivacy"}),
     )
     .await;
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
@@ -919,6 +933,7 @@ async fn e2e_prio3_count_fixed_size() {
             json!("0"),
         ],
         b"",
+        json!({"dp_strategy": "NoDifferentialPrivacy"}),
     )
     .await;
     assert!(result.is_string());
