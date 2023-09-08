@@ -4,7 +4,7 @@ use futures::future::join_all;
 use janus_core::{
     task::VERIFY_KEY_LENGTH,
     test_util::{install_test_trace_subscriber, testcontainers::container_client},
-    time::{Clock, RealClock, TimeExt},
+    time::{Clock, RealClock, TimeExt}, dp::{DpStrategyInstance, NoDifferentialPrivacy},
 };
 use janus_interop_binaries::{
     test_util::{await_ready_ok, generate_network_name, generate_unique_name},
@@ -595,7 +595,7 @@ async fn e2e_prio3_count() {
             json!("0"),
         ],
         b"",
-        json!({"dp_strategy": "NoDifferentialPrivacy"}),
+        json!(DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})),
     )
     .await;
     assert!(result.is_string());
@@ -616,7 +616,7 @@ async fn e2e_prio3_sum() {
             json!("14"),
         ],
         b"",
-        json!({"dp_strategy": "NoDifferentialPrivacy"}),
+        json!(DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})),
     )
     .await;
     assert!(result.is_string());
@@ -634,7 +634,7 @@ async fn e2e_prio3_sum_vec() {
             json!(["10", "0", "0", "0"]),
         ],
         b"",
-        json!({"dp_strategy": "NoDifferentialPrivacy"}),
+        json!(DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})),
     )
     .await;
     for element in result.as_array().expect("SumVec result should be an array") {
@@ -659,7 +659,7 @@ async fn e2e_prio3_histogram() {
             json!("5"),
         ],
         b"",
-        json!({"dp_strategy": "NoDifferentialPrivacy"}),
+        json!(DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})),
     )
     .await;
     for element in result
@@ -682,7 +682,7 @@ async fn e2e_prio3_count_vec() {
             json!(["1", "0", "0", "0"]),
         ],
         b"",
-        json!({"dp_strategy": "NoDifferentialPrivacy"}),
+        json!(DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})),
     )
     .await;
     for element in result
@@ -724,7 +724,7 @@ async fn e2e_prio3_fixed16vec() {
             ]),
         ],
         b"",
-        json!({"dp_strategy": "NoDifferentialPrivacy"}),
+        json!(DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})),
     )
     .await;
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
@@ -761,7 +761,7 @@ async fn e2e_prio3_fixed32vec() {
             ]),
         ],
         b"",
-        json!({"dp_strategy": "NoDifferentialPrivacy"}),
+        json!(DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})),
     )
     .await;
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
@@ -798,7 +798,7 @@ async fn e2e_prio3_fixed64vec() {
             ]),
         ],
         b"",
-        json!({"dp_strategy": "NoDifferentialPrivacy"}),
+        json!(DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})),
     )
     .await;
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
@@ -835,7 +835,7 @@ async fn e2e_prio3_fixed16vec_fixed_size() {
             ]),
         ],
         b"",
-        json!({"dp_strategy": "NoDifferentialPrivacy"}),
+        json!(DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})),
     )
     .await;
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
@@ -872,7 +872,7 @@ async fn e2e_prio3_fixed32vec_fixed_size() {
             ]),
         ],
         b"",
-        json!({"dp_strategy": "NoDifferentialPrivacy"}),
+        json!(DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})),
     )
     .await;
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
@@ -909,7 +909,7 @@ async fn e2e_prio3_fixed64vec_fixed_size() {
             ]),
         ],
         b"",
-        json!({"dp_strategy": "NoDifferentialPrivacy"}),
+        json!(DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})),
     )
     .await;
     assert_eq!(result, json!(["0.5", "0.5", "0.6875"]));
@@ -933,7 +933,7 @@ async fn e2e_prio3_count_fixed_size() {
             json!("0"),
         ],
         b"",
-        json!({"dp_strategy": "NoDifferentialPrivacy"}),
+        json!(DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {})),
     )
     .await;
     assert!(result.is_string());
