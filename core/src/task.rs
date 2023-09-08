@@ -41,6 +41,27 @@ pub enum VdafInstance {
     /// A `Prio3` 64-bit fixedpoint vector sum with bounded L2 norm.
     #[cfg(feature = "fpvec_bounded_l2")]
     Prio3FixedPoint64BitBoundedL2VecSum { length: usize },
+    /// A `Prio3` 16-bit fixed point vector sum with bounded L2 norm and
+    /// zero-concentrated differential privacy.
+    #[cfg(feature = "fpvec_bounded_l2")]
+    Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+        length: usize,
+        dp_strategy: prio::dp::distributions::ZCdpDiscreteGaussian,
+    },
+    /// A `Prio3` 32-bit fixed point vector sum with bounded L2 norm and
+    /// zero-concentrated differential privacy.
+    #[cfg(feature = "fpvec_bounded_l2")]
+    Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+        length: usize,
+        dp_strategy: prio::dp::distributions::ZCdpDiscreteGaussian,
+    },
+    /// A `Prio3` 64-bit fixedpoint vector sum with bounded L2 norm and
+    /// zero-concentrated differential privacy.
+    #[cfg(feature = "fpvec_bounded_l2")]
+    Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+        length: usize,
+        dp_strategy: prio::dp::distributions::ZCdpDiscreteGaussian,
+    },
     /// The `poplar1` VDAF. Support for this VDAF is experimental.
     Poplar1 { bits: usize },
 
@@ -265,7 +286,7 @@ macro_rules! vdaf_dispatch_impl_fpvec_bounded_l2 {
                 type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
                     ::fixed::FixedI16<::fixed::types::extra::U15>,
                 >;
-                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                type $DpStrategy = ::janus_core::dp::NoDifferentialPrivacy;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -274,12 +295,47 @@ macro_rules! vdaf_dispatch_impl_fpvec_bounded_l2 {
                 type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
                     ::fixed::FixedI32<::fixed::types::extra::U31>,
                 >;
-                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                type $DpStrategy = ::janus_core::dp::NoDifferentialPrivacy;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
 
             ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length } => {
+                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
+                    ::fixed::FixedI64<::fixed::types::extra::U63>,
+                >;
+                type $DpStrategy = ::janus_core::dp::NoDifferentialPrivacy;
+                const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $body
+            }
+            ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            } => {
+                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
+                    ::fixed::FixedI16<::fixed::types::extra::U15>,
+                >;
+                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $body
+            }
+
+            ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            } => {
+                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
+                    ::fixed::FixedI32<::fixed::types::extra::U31>,
+                >;
+                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $body
+            }
+
+            ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            } => {
                 type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
                     ::fixed::FixedI64<::fixed::types::extra::U63>,
                 >;
@@ -303,7 +359,7 @@ macro_rules! vdaf_dispatch_impl_fpvec_bounded_l2 {
                 type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
                     ::fixed::FixedI16<::fixed::types::extra::U15>,
                 >;
-                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                type $DpStrategy = ::janus_core::dp::NoDifferentialPrivacy;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
@@ -316,12 +372,59 @@ macro_rules! vdaf_dispatch_impl_fpvec_bounded_l2 {
                 type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
                     ::fixed::FixedI32<::fixed::types::extra::U31>,
                 >;
-                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                type $DpStrategy = ::janus_core::dp::NoDifferentialPrivacy;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
                 $body
             }
 
             ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length } => {
+                let $vdaf =
+                    ::prio::vdaf::prio3::Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(
+                        2, *length,
+                    )?;
+                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
+                    ::fixed::FixedI64<::fixed::types::extra::U63>,
+                >;
+                type $DpStrategy = ::janus_core::dp::NoDifferentialPrivacy;
+                const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $body
+            }
+            ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            } => {
+                let $vdaf =
+                    ::prio::vdaf::prio3::Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(
+                        2, *length,
+                    )?;
+                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
+                    ::fixed::FixedI16<::fixed::types::extra::U15>,
+                >;
+                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $body
+            }
+
+            ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            } => {
+                let $vdaf =
+                    ::prio::vdaf::prio3::Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(
+                        2, *length,
+                    )?;
+                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
+                    ::fixed::FixedI32<::fixed::types::extra::U31>,
+                >;
+                type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $body
+            }
+
+            ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            } => {
                 let $vdaf =
                     ::prio::vdaf::prio3::Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(
                         2, *length,
@@ -446,7 +549,10 @@ macro_rules! vdaf_dispatch_impl {
 
             ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { .. }
             | ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { .. }
-            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. } => {
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. }
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp { .. }
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp { .. }
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp { .. } => {
                 ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN, ($flag, $DpStrategy)) => $body)
             }
 
@@ -474,7 +580,10 @@ macro_rules! vdaf_dispatch_impl {
 
             ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { .. }
             | ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { .. }
-            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. } => {
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. }
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp { .. }
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp { .. }
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp { .. } => {
                 ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN, ($flag, $DpStrategy)) => $body)
             }
 
@@ -507,7 +616,10 @@ macro_rules! vdaf_dispatch_impl {
 
             ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { .. }
             | ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { .. }
-            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. } => {
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. }
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp { .. }
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp { .. }
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp { .. } => {
                 ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN, ($flag, $DpStrategy)) => $body)
             }
 
@@ -529,7 +641,10 @@ macro_rules! vdaf_dispatch_impl {
 
             ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { .. }
             | ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { .. }
-            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. } => {
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. }
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp { .. }
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp { .. }
+            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp { .. } => {
                 ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN, ($flag, $DpStrategy)) => $body)
             }
 
