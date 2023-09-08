@@ -3007,7 +3007,7 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 [[package]]
 name = "prio"
 version = "0.14.0"
-source = "git+https://github.com/dpsa4fl/libprio-rs.git?branch=dp-update-for-janus#d2cdd4cb91863c538f0112dc12f4dc2048d9962b"
+source = "git+https://github.com/dpsa4fl/libprio-rs.git?branch=dp-update-for-janus#3d5f759325915cc16308cf5236661ab21064e177"
 dependencies = [
  "aes",
  "base64 0.21.2",
