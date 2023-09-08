@@ -306,7 +306,6 @@ impl Task {
             Vec::new(),
             Vec::new(),
             Vec::new(),
-            DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         ));
         task.validate()?;
         Ok(task)

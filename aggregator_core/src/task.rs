@@ -107,8 +107,6 @@ pub struct Task {
     helper_aggregator_endpoint: Url,
     /// The query type this task uses to generate batches.
     query_type: QueryType,
-    /// The DP strategy this task uses.
-    dp_strategy: DpStrategyInstance,
     /// The VDAF this task executes.
     vdaf: VdafInstance,
     /// The role performed by the aggregator.
@@ -163,7 +161,6 @@ impl Task {
         aggregator_auth_tokens: Vec<AuthenticationToken>,
         collector_auth_tokens: Vec<AuthenticationToken>,
         hpke_keys: I,
-        dp_strategy: DpStrategyInstance,
     ) -> Result<Self, Error> {
         let task = Self::new_without_validation(
             task_id,
@@ -183,7 +180,6 @@ impl Task {
             aggregator_auth_tokens,
             collector_auth_tokens,
             hpke_keys,
-            dp_strategy,
         );
         task.validate()?;
         Ok(task)
@@ -210,7 +206,6 @@ impl Task {
         aggregator_auth_tokens: Vec<AuthenticationToken>,
         collector_auth_tokens: Vec<AuthenticationToken>,
         hpke_keys: I,
-        dp_strategy: DpStrategyInstance,
     ) -> Self {
         // Compute hpke_configs mapping cfg.id -> (cfg, key).
         let hpke_keys: HashMap<HpkeConfigId, HpkeKeypair> = hpke_keys
@@ -239,7 +234,6 @@ impl Task {
             aggregator_auth_tokens,
             collector_auth_tokens,
             hpke_keys,
-            dp_strategy,
         }
     }
 
@@ -384,11 +378,6 @@ impl Task {
         &self.hpke_keys
     }
 
-    /// Retrieves the DP strategy this task uses.
-    pub fn dp_strategy(&self) -> &DpStrategyInstance {
-        &self.dp_strategy
-    }
-
     /// Retrieve the "current" HPKE in use for this task.
     #[cfg(feature = "test-util")]
     pub fn current_hpke_key(&self) -> &HpkeKeypair {
@@ -520,7 +509,6 @@ pub struct SerializedTask {
     aggregator_auth_tokens: Vec<AuthenticationToken>,
     collector_auth_tokens: Vec<AuthenticationToken>,
     hpke_keys: Vec<HpkeKeypair>, // uses unpadded base64url
-    dp_strategy: DpStrategyInstance,
 }
 
 impl SerializedTask {
@@ -606,7 +594,6 @@ impl Serialize for Task {
             aggregator_auth_tokens: self.aggregator_auth_tokens.clone(),
             collector_auth_tokens: self.collector_auth_tokens.clone(),
             hpke_keys,
-            dp_strategy: self.dp_strategy.clone(),
         }
         .serialize(serializer)
     }
@@ -646,7 +633,6 @@ impl TryFrom<SerializedTask> for Task {
             serialized_task.aggregator_auth_tokens,
             serialized_task.collector_auth_tokens,
             serialized_task.hpke_keys,
-            serialized_task.dp_strategy,
         )
     }
 }
@@ -1288,10 +1274,6 @@ mod tests {
                 Token::Str("YWdncmVnYXRvciBocGtlIHByaXZhdGUga2V5"),
                 Token::StructEnd,
                 Token::SeqEnd,
-                Token::Str("dp_strategy"),
-                Token::NewtypeVariant { name: "DpStrategyInstance", variant: "NoDifferentialPrivacy", },
-                Token::Struct { name: "NoDifferentialPrivacy", len: 0, },
-                Token::StructEnd,
                 Token::StructEnd,
             ],
         );
@@ -1480,10 +1462,6 @@ mod tests {
                 Token::Str("YWdncmVnYXRvciBocGtlIHByaXZhdGUga2V5"),
                 Token::StructEnd,
                 Token::SeqEnd,
-                Token::Str("dp_strategy"),
-                Token::NewtypeVariant { name: "DpStrategyInstance", variant: "NoDifferentialPrivacy", },
-                Token::Struct { name: "NoDifferentialPrivacy", len: 0, },
-                Token::StructEnd,
                 Token::StructEnd,
             ],
         );

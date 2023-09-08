@@ -1053,8 +1053,6 @@ impl<C: Clock> Transaction<'_, C> {
             )?));
         }
 
-        let dp_strategy = DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {});
-
         let task = Task::new_without_validation(
             *task_id,
             leader_aggregator_endpoint,
@@ -1073,7 +1071,6 @@ impl<C: Clock> Transaction<'_, C> {
             aggregator_auth_tokens,
             collector_auth_tokens,
             hpke_keypairs,
-            dp_strategy,
         );
         // Trial validation through all known schemes. This is a workaround to avoid extending the
         // schema to track the provenance of tasks. If we do end up implementing a task provenance

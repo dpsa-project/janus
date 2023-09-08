@@ -154,8 +154,6 @@ pub(super) async fn post_task<C: Clock>(
         HpkeAeadId::Aes128Gcm,
     )]);
 
-    let dp_strategy = DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {});
-
     let task = Arc::new(
         Task::new(
             task_id,
@@ -177,7 +175,6 @@ pub(super) async fn post_task<C: Clock>(
             aggregator_auth_tokens,
             collector_auth_tokens,
             hpke_keys,
-            dp_strategy,
         )
         .map_err(|err| Error::BadRequest(format!("Error constructing task: {err}")))?,
     );

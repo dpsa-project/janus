@@ -2884,12 +2884,12 @@ impl VdafOps {
                                 .await
                                 .map_err(|e| datastore::Error::User(e.into()))?;
 
-                            let strategy =
-                                S::try_from(task.dp_strategy().clone()).map_err(|_| {
-                                    datastore::Error::DifferentialPrivacy(format!(
-                                        "The strategy is not compatible with the chosen VDAF."
-                                    ))
-                                })?;
+                            let strategy = todo!();
+                                // S::try_from(task.dp_strategy().clone()).map_err(|_| {
+                                //     datastore::Error::DifferentialPrivacy(format!(
+                                //         "The strategy is not compatible with the chosen VDAF."
+                                //     ))
+                                // })?;
 
                             vdaf.add_noise_to_agg_share(
                                 &strategy,
