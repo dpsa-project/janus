@@ -201,6 +201,46 @@ async fn handle_upload(
                     .context("failed to construct Prio3FixedPoint64BitBoundedL2VecSum VDAF")?;
             handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
         }
+
+        #[cfg(feature = "fpvec_bounded_l2")]
+        VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+            length,
+            dp_strategy,
+        } => {
+            let measurement =
+                parse_vector_measurement::<FixedI16<U15>>(request.measurement.clone())?;
+            let vdaf_client: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>> =
+                Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length)
+                    .context("failed to construct Prio3FixedPoint16BitBoundedL2VecSumZCdp VDAF")?;
+            handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
+        }
+
+        #[cfg(feature = "fpvec_bounded_l2")]
+        VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+            length,
+            dp_strategy,
+        } => {
+            let measurement =
+                parse_vector_measurement::<FixedI32<U31>>(request.measurement.clone())?;
+            let vdaf_client: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>> =
+                Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length)
+                    .context("failed to construct Prio3FixedPoint32BitBoundedL2VecSumZCdp VDAF")?;
+            handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
+        }
+
+        #[cfg(feature = "fpvec_bounded_l2")]
+        VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+            length,
+            dp_strategy,
+        } => {
+            let measurement =
+                parse_vector_measurement::<FixedI64<U63>>(request.measurement.clone())?;
+            let vdaf_client: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>> =
+                Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length)
+                    .context("failed to construct Prio3FixedPoint64BitBoundedL2VecSumZCdp VDAF")?;
+            handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
+        }
+
         _ => panic!("Unsupported VDAF: {vdaf_instance:?}"),
     }
     Ok(())

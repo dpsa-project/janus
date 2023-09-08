@@ -448,6 +448,84 @@ async fn handle_collection_start(
             .await?
         }
 
+        #[cfg(feature = "fpvec_bounded_l2")]
+        (
+            ParsedQuery::TimeInterval(batch_interval),
+            janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            },
+        ) => {
+            let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>> =
+                Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length)
+                    .context("failed to construct Prio3FixedPoint16BitBoundedL2VecSumZCdp VDAF")?;
+            handle_collect_generic(
+                http_client,
+                collector_params,
+                Query::new_time_interval(batch_interval),
+                vdaf,
+                &agg_param,
+                |_| None,
+                |result| {
+                    let converted = result.iter().cloned().map(NumberAsString).collect();
+                    AggregationResult::FloatVec(converted)
+                },
+            )
+            .await?
+        }
+
+        #[cfg(feature = "fpvec_bounded_l2")]
+        (
+            ParsedQuery::TimeInterval(batch_interval),
+            janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            },
+        ) => {
+            let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>> =
+                Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length)
+                    .context("failed to construct Prio3FixedPoint32BitBoundedL2VecSumZCdp VDAF")?;
+            handle_collect_generic(
+                http_client,
+                collector_params,
+                Query::new_time_interval(batch_interval),
+                vdaf,
+                &agg_param,
+                |_| None,
+                |result| {
+                    let converted = result.iter().cloned().map(NumberAsString).collect();
+                    AggregationResult::FloatVec(converted)
+                },
+            )
+            .await?
+        }
+
+        #[cfg(feature = "fpvec_bounded_l2")]
+        (
+            ParsedQuery::TimeInterval(batch_interval),
+            janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            },
+        ) => {
+            let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>> =
+                Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length)
+                    .context("failed to construct Prio3FixedPoint64BitBoundedL2VecSumZCdp VDAF")?;
+            handle_collect_generic(
+                http_client,
+                collector_params,
+                Query::new_time_interval(batch_interval),
+                vdaf,
+                &agg_param,
+                |_| None,
+                |result| {
+                    let converted = result.iter().cloned().map(NumberAsString).collect();
+                    AggregationResult::FloatVec(converted)
+                },
+            )
+            .await?
+        }
+
         (ParsedQuery::FixedSize(fixed_size_query), VdafInstance::Prio3Count {}) => {
             let vdaf = Prio3::new_count(2).context("failed to construct Prio3Count VDAF")?;
             handle_collect_generic(
@@ -530,6 +608,84 @@ async fn handle_collection_start(
         (
             ParsedQuery::FixedSize(fixed_size_query),
             janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length },
+        ) => {
+            let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>> =
+                Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length)
+                    .context("failed to construct Prio3FixedPoint64BitBoundedL2VecSum VDAF")?;
+            handle_collect_generic(
+                http_client,
+                collector_params,
+                Query::new_fixed_size(fixed_size_query),
+                vdaf,
+                &agg_param,
+                |selector| Some(*selector.batch_id()),
+                |result| {
+                    let converted = result.iter().cloned().map(NumberAsString).collect();
+                    AggregationResult::FloatVec(converted)
+                },
+            )
+            .await?
+        }
+
+        #[cfg(feature = "fpvec_bounded_l2")]
+        (
+            ParsedQuery::FixedSize(fixed_size_query),
+            janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            },
+        ) => {
+            let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>> =
+                Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length)
+                    .context("failed to construct Prio3FixedPoint16BitBoundedL2VecSum VDAF")?;
+            handle_collect_generic(
+                http_client,
+                collector_params,
+                Query::new_fixed_size(fixed_size_query),
+                vdaf,
+                &agg_param,
+                |selector| Some(*selector.batch_id()),
+                |result| {
+                    let converted = result.iter().cloned().map(NumberAsString).collect();
+                    AggregationResult::FloatVec(converted)
+                },
+            )
+            .await?
+        }
+
+        #[cfg(feature = "fpvec_bounded_l2")]
+        (
+            ParsedQuery::FixedSize(fixed_size_query),
+            janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            },
+        ) => {
+            let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>> =
+                Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length)
+                    .context("failed to construct Prio3FixedPoint32BitBoundedL2VecSum VDAF")?;
+            handle_collect_generic(
+                http_client,
+                collector_params,
+                Query::new_fixed_size(fixed_size_query),
+                vdaf,
+                &agg_param,
+                |selector| Some(*selector.batch_id()),
+                |result| {
+                    let converted = result.iter().cloned().map(NumberAsString).collect();
+                    AggregationResult::FloatVec(converted)
+                },
+            )
+            .await?
+        }
+
+        #[cfg(feature = "fpvec_bounded_l2")]
+        (
+            ParsedQuery::FixedSize(fixed_size_query),
+            janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy,
+            },
         ) => {
             let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>> =
                 Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length)
