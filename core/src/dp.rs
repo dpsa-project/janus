@@ -1,6 +1,7 @@
 #[cfg(feature = "test-util")]
 use crate::test_util::dummy_vdaf::Vdaf;
 use anyhow::anyhow;
+use fixed::traits::Fixed;
 use prio::{
     dp::{
         distributions::ZCdpDiscreteGaussian, DifferentialPrivacyBudget,
@@ -8,8 +9,8 @@ use prio::{
     },
     field::{Field128, Field64},
     flp::{
-        gadgets::{BlindPolyEval, ParallelSumMultithreaded},
-        TypeWithNoise,
+        gadgets::{BlindPolyEval, ParallelSumMultithreaded, ParallelSumGadget, PolyEval},
+        TypeWithNoise, types::fixedpoint_l2::{FixedPointBoundedL2VecSum, compatible_float::CompatibleFloat},
     },
     vdaf::{prg::PrgSha3, AggregatorWithNoise},
 };
@@ -96,6 +97,17 @@ impl TypeWithNoise<NoDifferentialPrivacy>
     >
 {
 }
+
+
+#[cfg(feature = "fpvec_bounded_l2")]
+impl<T, SPoly, SBlindPoly> TypeWithNoise<NoDifferentialPrivacy>
+    for FixedPointBoundedL2VecSum<T, SPoly, SBlindPoly>
+where
+    T: Fixed + CompatibleFloat,
+    SPoly: ParallelSumGadget<Field128, PolyEval<Field128>> + Eq + Clone + 'static,
+    SBlindPoly: ParallelSumGadget<Field128, BlindPolyEval<Field128>> + Eq + Clone + 'static,
+{}
+
 
 impl AggregatorWithNoise<16, 16, NoDifferentialPrivacy>
     for prio::vdaf::poplar1::Poplar1<PrgSha3, 16>

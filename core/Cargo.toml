@@ -14,7 +14,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-fpvec_bounded_l2 = ["prio/experimental"]
+fpvec_bounded_l2 = ["dep:fixed", "prio/experimental"]
 test-util = [
     "dep:assert_matches",
     "dep:lazy_static",
@@ -39,6 +39,7 @@ base64 = "0.21.2"
 chrono = { workspace = true, features = ["clock"] }
 derivative = "2.2.0"
 futures = "0.3.28"
+fixed = { version = "1.23", optional = true }
 hex = "0.4"
 hpke-dispatch = "0.5.0"
 http = "0.2.9"
