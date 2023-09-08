@@ -731,7 +731,6 @@ pub mod test_util {
                     Vec::from([random(), AuthenticationToken::DapAuth(random())]),
                     collector_auth_tokens,
                     Vec::from([aggregator_keypair_0, aggregator_keypair_1]),
-                    DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
                 )
                 .unwrap(),
             )
