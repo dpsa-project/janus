@@ -4,7 +4,6 @@ use crate::SecretBytes;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use derivative::Derivative;
 use janus_core::{
-    dp::DpStrategyInstance,
     hpke::{generate_hpke_config_and_private_key, HpkeKeypair},
     task::{url_ensure_trailing_slash, AuthenticationToken, VdafInstance},
     time::TimeExt,
@@ -653,7 +652,6 @@ pub mod test_util {
         SecretBytes,
     };
     use janus_core::{
-        dp::{DpStrategyInstance, NoDifferentialPrivacy},
         hpke::{test_util::generate_test_hpke_config_and_private_key, HpkeKeypair},
         task::{AuthenticationToken, VdafInstance, VERIFY_KEY_LENGTH},
         time::DurationExt,
@@ -884,7 +882,6 @@ mod tests {
     };
     use assert_matches::assert_matches;
     use janus_core::{
-        dp::{DpStrategyInstance, NoDifferentialPrivacy},
         hpke::{test_util::generate_test_hpke_config_and_private_key, HpkeKeypair, HpkePrivateKey},
         task::{AuthenticationToken, VERIFY_KEY_LENGTH},
         test_util::roundtrip_encoding,
@@ -1026,7 +1023,6 @@ mod tests {
             Vec::from([random()]),
             Vec::from([random()]),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap();
 

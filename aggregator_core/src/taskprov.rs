@@ -5,7 +5,6 @@ use crate::{
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use derivative::Derivative;
 use janus_core::{
-    dp::{DpStrategyInstance, NoDifferentialPrivacy},
     task::{AuthenticationToken, VdafInstance}
 };
 use janus_messages::{Duration, HpkeConfig, Role, TaskId, Time};

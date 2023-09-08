@@ -15,7 +15,6 @@ use janus_aggregator_core::{
     SecretBytes,
 };
 use janus_core::{hpke::generate_hpke_config_and_private_key, time::Clock,
-                 dp::{DpStrategyInstance, NoDifferentialPrivacy},
 };
 use janus_messages::HpkeConfigId;
 use janus_messages::{

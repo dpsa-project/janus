@@ -843,7 +843,10 @@ impl<C: Clock> TaskAggregator<C> {
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp { length, dp_strategy } => {
+            VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy: _,
+            } => {
                 let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>> =
                     Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
@@ -851,7 +854,10 @@ impl<C: Clock> TaskAggregator<C> {
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp { length, dp_strategy } => {
+            VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy: _,
+            } => {
                 let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>> =
                     Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
@@ -859,7 +865,10 @@ impl<C: Clock> TaskAggregator<C> {
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp { length, dp_strategy } => {
+            VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+                length,
+                dp_strategy: _,
+            } => {
                 let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>> =
                     Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
@@ -2957,11 +2966,11 @@ impl VdafOps {
                                 .map_err(|e| datastore::Error::User(e.into()))?;
 
                             let strategy = todo!();
-                                // S::try_from(task.dp_strategy().clone()).map_err(|_| {
-                                //     datastore::Error::DifferentialPrivacy(format!(
-                                //         "The strategy is not compatible with the chosen VDAF."
-                                //     ))
-                                // })?;
+                            // S::try_from(task.dp_strategy().clone()).map_err(|_| {
+                            //     datastore::Error::DifferentialPrivacy(format!(
+                            //         "The strategy is not compatible with the chosen VDAF."
+                            //     ))
+                            // })?;
 
                             vdaf.add_noise_to_agg_share(
                                 &strategy,

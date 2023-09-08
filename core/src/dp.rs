@@ -9,13 +9,15 @@ use prio::{
     },
     field::{Field128, Field64},
     flp::{
-        gadgets::{BlindPolyEval, ParallelSumMultithreaded, ParallelSumGadget, PolyEval},
-        TypeWithNoise, types::fixedpoint_l2::{FixedPointBoundedL2VecSum, compatible_float::CompatibleFloat},
+        gadgets::{BlindPolyEval, ParallelSumGadget, ParallelSumMultithreaded, PolyEval},
+        types::fixedpoint_l2::{compatible_float::CompatibleFloat, FixedPointBoundedL2VecSum},
+        TypeWithNoise,
     },
     vdaf::{prg::PrgSha3, AggregatorWithNoise},
 };
 use serde::{Deserialize, Serialize};
 
+/*
 ////////////////////////////////////////////////////////////////
 // identity strategy
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
@@ -49,6 +51,7 @@ impl TryFrom<DpStrategyInstance> for ZCdpDiscreteGaussian {
         }
     }
 }
+*/
 
 pub struct NoBudget {}
 impl DifferentialPrivacyBudget for NoBudget {}
@@ -98,7 +101,6 @@ impl TypeWithNoise<NoDifferentialPrivacy>
 {
 }
 
-
 #[cfg(feature = "fpvec_bounded_l2")]
 impl<T, SPoly, SBlindPoly> TypeWithNoise<NoDifferentialPrivacy>
     for FixedPointBoundedL2VecSum<T, SPoly, SBlindPoly>
@@ -106,8 +108,8 @@ where
     T: Fixed + CompatibleFloat,
     SPoly: ParallelSumGadget<Field128, PolyEval<Field128>> + Eq + Clone + 'static,
     SBlindPoly: ParallelSumGadget<Field128, BlindPolyEval<Field128>> + Eq + Clone + 'static,
-{}
-
+{
+}
 
 impl AggregatorWithNoise<16, 16, NoDifferentialPrivacy>
     for prio::vdaf::poplar1::Poplar1<PrgSha3, 16>

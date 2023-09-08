@@ -17,7 +17,6 @@ use anyhow::anyhow;
 use chrono::NaiveDateTime;
 use futures::future::try_join_all;
 use janus_core::{
-    dp::{DpStrategyInstance, NoDifferentialPrivacy},
     hpke::{HpkeKeypair, HpkePrivateKey},
     task::{AuthenticationToken, VdafInstance},
     time::{Clock, TimeExt},

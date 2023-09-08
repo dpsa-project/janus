@@ -338,7 +338,7 @@ impl<C: Clock + 'static> AggregationJobCreator<C> {
                 task::QueryType::TimeInterval,
                 VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
                     length,
-                    dp_strategy,
+                    dp_strategy: _,
                 },
             ) => {
                 let vdaf: Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>> =
@@ -354,7 +354,7 @@ impl<C: Clock + 'static> AggregationJobCreator<C> {
                 task::QueryType::TimeInterval,
                 VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
                     length,
-                    dp_strategy,
+                    dp_strategy: _,
                 },
             ) => {
                 let vdaf: Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>> =
@@ -370,7 +370,7 @@ impl<C: Clock + 'static> AggregationJobCreator<C> {
                 task::QueryType::TimeInterval,
                 VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
                     length,
-                    dp_strategy,
+                    dp_strategy: _,
                 },
             ) => {
                 let vdaf: Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>> =
@@ -529,7 +529,7 @@ impl<C: Clock + 'static> AggregationJobCreator<C> {
                 },
                 VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
                     length,
-                    dp_strategy,
+                    dp_strategy: _,
                 },
             ) => {
                 let vdaf: Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>> =
@@ -552,7 +552,7 @@ impl<C: Clock + 'static> AggregationJobCreator<C> {
                 },
                 VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
                     length,
-                    dp_strategy,
+                    dp_strategy: _,
                 },
             ) => {
                 let vdaf: Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>> =
@@ -575,7 +575,7 @@ impl<C: Clock + 'static> AggregationJobCreator<C> {
                 },
                 VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
                     length,
-                    dp_strategy,
+                    dp_strategy: _,
                 },
             ) => {
                 let vdaf: Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>> =
