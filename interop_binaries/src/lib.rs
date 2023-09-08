@@ -305,7 +305,6 @@ pub struct AggregatorAddTaskRequest {
     pub time_precision: u64,           // in seconds
     pub collector_hpke_config: String, // in unpadded base64url
     pub task_expiration: Option<u64>,  // in seconds since the epoch
-    pub dp_strategy: DpStrategyInstance,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -351,7 +350,6 @@ impl From<Task> for AggregatorAddTaskRequest {
             collector_hpke_config: URL_SAFE_NO_PAD
                 .encode(task.collector_hpke_config().unwrap().get_encoded()),
             task_expiration: task.task_expiration().map(Time::as_seconds_since_epoch),
-            dp_strategy: task.dp_strategy().clone(),
         }
     }
 }
