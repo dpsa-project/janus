@@ -1772,7 +1772,6 @@ fn task_resp_serialization() {
             ),
             HpkePrivateKey::new(b"unused".to_vec()),
         ))],
-        DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
     )
     .unwrap();
     assert_tokens(

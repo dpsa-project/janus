@@ -936,7 +936,6 @@ mod tests {
             Vec::from([random()]),
             Vec::new(),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap_err();
 
@@ -959,7 +958,6 @@ mod tests {
             Vec::from([random()]),
             Vec::from([random()]),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap();
 
@@ -982,7 +980,6 @@ mod tests {
             Vec::from([random()]),
             Vec::new(),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap();
 
@@ -1005,7 +1002,6 @@ mod tests {
             Vec::from([random()]),
             Vec::from([random()]),
             Vec::from([generate_test_hpke_config_and_private_key()]),
-            DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
         )
         .unwrap_err();
     }
@@ -1129,7 +1125,6 @@ mod tests {
                     ),
                     HpkePrivateKey::new(b"aggregator hpke private key".to_vec()),
                 )],
-                DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
             )
             .unwrap(),
             &[
@@ -1317,7 +1312,6 @@ mod tests {
                     ),
                     HpkePrivateKey::new(b"aggregator hpke private key".to_vec()),
                 )],
-                DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
             )
             .unwrap(),
             &[
