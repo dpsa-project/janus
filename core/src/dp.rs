@@ -1,3 +1,4 @@
+use crate::task::VdafInstance;
 #[cfg(feature = "test-util")]
 use crate::test_util::dummy_vdaf::Vdaf;
 use anyhow::anyhow;
@@ -17,16 +18,37 @@ use prio::{
 };
 use serde::{Deserialize, Serialize};
 
-/*
+
+
+
 ////////////////////////////////////////////////////////////////
-// identity strategy
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
-pub enum DpStrategyInstance {
-    NoDifferentialPrivacy(NoDifferentialPrivacy),
-    ZCdpDiscreteGaussian(ZCdpDiscreteGaussian),
+// converting into strategy enum
+
+pub fn vdaf_instance_into_strategy_instance(vdaf: &VdafInstance) -> DpStrategyInstance {
+    match vdaf {
+        VdafInstance::Prio3Count
+        | VdafInstance::Prio3CountVec { .. }
+        | VdafInstance::Prio3Sum { .. }
+        | VdafInstance::Prio3SumVec { .. }
+        | VdafInstance::Prio3Histogram { .. }
+        | VdafInstance::Poplar1 { .. } => DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
+        VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { .. }
+        | VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { .. }
+        | VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. } => todo!(),
+        VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp { dp_strategy, .. }
+        | VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp { dp_strategy, .. }
+        | VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp { dp_strategy, .. } => DpStrategyInstance::ZCdpDiscreteGaussian( dp_strategy.clone() ),
+
+        #[cfg(feature = "test-util")]
+        VdafInstance::Fake
+        | VdafInstance::FakeFailsPrepInit
+        | VdafInstance::FakeFailsPrepStep => DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
+    }
 }
 
-impl DpStrategyInstance {}
+
+////////////////////////////////////////////////////////////////
+// converting strategy enum into strategy types
 
 impl TryFrom<DpStrategyInstance> for NoDifferentialPrivacy {
     type Error = anyhow::Error;
@@ -51,7 +73,17 @@ impl TryFrom<DpStrategyInstance> for ZCdpDiscreteGaussian {
         }
     }
 }
-*/
+
+////////////////////////////////////////////////////////////////
+// identity strategy
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
+pub enum DpStrategyInstance {
+    NoDifferentialPrivacy(NoDifferentialPrivacy),
+    ZCdpDiscreteGaussian(ZCdpDiscreteGaussian),
+}
+
+impl DpStrategyInstance {}
+
 
 pub struct NoBudget {}
 impl DifferentialPrivacyBudget for NoBudget {}

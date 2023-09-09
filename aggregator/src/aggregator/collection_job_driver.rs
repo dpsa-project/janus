@@ -16,7 +16,7 @@ use janus_aggregator_core::{
     },
     task,
 };
-use janus_core::{time::Clock, vdaf_dispatch};
+use janus_core::{time::Clock, vdaf_dispatch, dp::{vdaf_instance_into_strategy_instance, DpStrategyInstance}};
 use janus_messages::{
     query_type::{FixedSize, QueryType, TimeInterval},
     AggregateShare, AggregateShareReq, BatchSelector,
@@ -80,6 +80,7 @@ impl CollectionJobDriver {
         datastore: Arc<Datastore<C>>,
         lease: Arc<Lease<AcquiredCollectionJob>>,
     ) -> Result<(), Error> {
+        let dp_strategy = vdaf_instance_into_strategy_instance(lease.leased().vdaf());
         match lease.leased().query_type() {
             task::QueryType::TimeInterval => {
                 vdaf_dispatch!(lease.leased().vdaf(), (vdaf, VdafType, VERIFY_KEY_LENGTH, DpStrategy) => {
@@ -89,7 +90,7 @@ impl CollectionJobDriver {
                         TimeInterval,
                         DpStrategy,
                         VdafType
-                    >(datastore, Arc::new(vdaf), lease)
+                    >(datastore, Arc::new(vdaf), lease, dp_strategy)
                     .await
                 })
             }
@@ -101,7 +102,7 @@ impl CollectionJobDriver {
                         FixedSize,
                         DpStrategy,
                         VdafType
-                    >(datastore, Arc::new(vdaf), lease)
+                    >(datastore, Arc::new(vdaf), lease, dp_strategy)
                     .await
                 })
             }
@@ -112,13 +113,14 @@ impl CollectionJobDriver {
         const SEED_SIZE: usize,
         C: Clock,
         Q: CollectableQueryType,
-        S: DifferentialPrivacyStrategy,
+        S: DifferentialPrivacyStrategy + TryFrom<DpStrategyInstance>,
         A: vdaf::AggregatorWithNoise<SEED_SIZE, 16, S> + Send + Sync,
     >(
         &self,
         datastore: Arc<Datastore<C>>,
         vdaf: Arc<A>,
         lease: Arc<Lease<AcquiredCollectionJob>>,
+        dp_strategy: DpStrategyInstance,
     ) -> Result<(), Error>
     where
         A: 'static,
@@ -216,13 +218,11 @@ impl CollectionJobDriver {
                 .await
                 .map_err(|e| datastore::Error::User(e.into()))?;
 
-        // let strategy = S::try_from(task.dp_strategy().clone()).map_err(|_| {
-        //     datastore::Error::DifferentialPrivacy(format!(
-        //         "The strategy is not compatible with the chosen VDAF."
-        //     ))
-        // })?;
-
-        let strategy = todo!();
+        let strategy = S::try_from(dp_strategy).map_err(|_| {
+            datastore::Error::DifferentialPrivacy(format!(
+                "The strategy is not compatible with the chosen VDAF."
+            ))
+        })?;
 
         vdaf.add_noise_to_agg_share(
             &strategy,
