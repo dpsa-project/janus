@@ -16,7 +16,6 @@ use janus_aggregator_core::{
     },
     task,
 };
-use janus_core::dp::DpStrategyInstance;
 use janus_core::{time::Clock, vdaf_dispatch};
 use janus_messages::{
     query_type::{FixedSize, QueryType, TimeInterval},
@@ -113,7 +112,7 @@ impl CollectionJobDriver {
         const SEED_SIZE: usize,
         C: Clock,
         Q: CollectableQueryType,
-        S: DifferentialPrivacyStrategy + TryFrom<DpStrategyInstance>,
+        S: DifferentialPrivacyStrategy,
         A: vdaf::AggregatorWithNoise<SEED_SIZE, 16, S> + Send + Sync,
     >(
         &self,

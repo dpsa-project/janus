@@ -1,7 +1,7 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use janus_aggregator_core::task::{QueryType, Task};
 use janus_core::{
-    dp::{DpStrategyInstance, NoDifferentialPrivacy},
+    dp::NoDifferentialPrivacy,
     hpke::{generate_hpke_config_and_private_key, HpkeKeypair},
     task::VdafInstance,
 };
