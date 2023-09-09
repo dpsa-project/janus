@@ -8,11 +8,34 @@ use serde::{de::Error, Deserialize, Deserializer, Serialize};
 use std::str;
 use url::Url;
 
+use crate::dp::DpStrategyInstance;
+
 /// HTTP header where auth tokens are provided in messages between participants.
 pub const DAP_AUTH_HEADER: &str = "DAP-Auth-Token";
 
 /// The length of the verify key parameter for Prio3 & Poplar1 VDAF instantiations.
 pub const VERIFY_KEY_LENGTH: usize = 16;
+
+#[cfg(feature = "fpvec_bounded_l2")]
+#[derive(Debug, Derivative, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum Prio3FixedPointBoundedL2VecSumBitSize {
+    BitSize16,
+    BitSize32,
+    BitSize64,
+}
+
+pub mod vdaf_instance_strategies {
+    use derivative::Derivative;
+    use prio::dp::distributions::ZCdpDiscreteGaussian;
+    use serde::{Serialize, Deserialize};
+    use crate::dp::NoDifferentialPrivacy;
+
+    #[derive(Debug, Derivative, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    pub enum Prio3FixedPointBoundedL2VecSum {
+        NoDifferentialPrivacy(NoDifferentialPrivacy),
+        ZCdpDiscreteGaussian(ZCdpDiscreteGaussian),
+    }
+}
 
 /// Identifiers for supported VDAFs, corresponding to definitions in
 /// [draft-irtf-cfrg-vdaf-03][1] and implementations in [`prio::vdaf::prio3`].
@@ -32,36 +55,39 @@ pub enum VdafInstance {
     Prio3SumVec { bits: usize, length: usize },
     /// A `Prio3` histogram with `length` buckets in it.
     Prio3Histogram { length: usize },
-    /// A `Prio3` 16-bit fixed point vector sum with bounded L2 norm.
+    /// A `Prio3` fixed point vector sum with bounded L2 norm.
     #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint16BitBoundedL2VecSum { length: usize },
-    /// A `Prio3` 32-bit fixed point vector sum with bounded L2 norm.
-    #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint32BitBoundedL2VecSum { length: usize },
-    /// A `Prio3` 64-bit fixedpoint vector sum with bounded L2 norm.
-    #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint64BitBoundedL2VecSum { length: usize },
-    /// A `Prio3` 16-bit fixed point vector sum with bounded L2 norm and
-    /// zero-concentrated differential privacy.
-    #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint16BitBoundedL2VecSumZCdp {
-        length: usize,
-        dp_strategy: prio::dp::distributions::ZCdpDiscreteGaussian,
-    },
-    /// A `Prio3` 32-bit fixed point vector sum with bounded L2 norm and
-    /// zero-concentrated differential privacy.
-    #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint32BitBoundedL2VecSumZCdp {
-        length: usize,
-        dp_strategy: prio::dp::distributions::ZCdpDiscreteGaussian,
-    },
-    /// A `Prio3` 64-bit fixedpoint vector sum with bounded L2 norm and
-    /// zero-concentrated differential privacy.
-    #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint64BitBoundedL2VecSumZCdp {
-        length: usize,
-        dp_strategy: prio::dp::distributions::ZCdpDiscreteGaussian,
-    },
+    Prio3FixedPointBoundedL2VecSum { bitsize: Prio3FixedPointBoundedL2VecSumBitSize, dp_strategy: vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum, length: usize },
+    // /// A `Prio3` 16-bit fixed point vector sum with bounded L2 norm.
+    // #[cfg(feature = "fpvec_bounded_l2")]
+    // Prio3FixedPoint16BitBoundedL2VecSum { length: usize },
+    // /// A `Prio3` 32-bit fixed point vector sum with bounded L2 norm.
+    // #[cfg(feature = "fpvec_bounded_l2")]
+    // Prio3FixedPoint32BitBoundedL2VecSum { length: usize },
+    // /// A `Prio3` 64-bit fixedpoint vector sum with bounded L2 norm.
+    // #[cfg(feature = "fpvec_bounded_l2")]
+    // Prio3FixedPoint64BitBoundedL2VecSum { length: usize },
+    // /// A `Prio3` 16-bit fixed point vector sum with bounded L2 norm and
+    // /// zero-concentrated differential privacy.
+    // #[cfg(feature = "fpvec_bounded_l2")]
+    // Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+    //     length: usize,
+    //     dp_strategy: prio::dp::distributions::ZCdpDiscreteGaussian,
+    // },
+    // /// A `Prio3` 32-bit fixed point vector sum with bounded L2 norm and
+    // /// zero-concentrated differential privacy.
+    // #[cfg(feature = "fpvec_bounded_l2")]
+    // Prio3FixedPoint32BitBoundedL2VecSumZCdp {
+    //     length: usize,
+    //     dp_strategy: prio::dp::distributions::ZCdpDiscreteGaussian,
+    // },
+    // /// A `Prio3` 64-bit fixedpoint vector sum with bounded L2 norm and
+    // /// zero-concentrated differential privacy.
+    // #[cfg(feature = "fpvec_bounded_l2")]
+    // Prio3FixedPoint64BitBoundedL2VecSumZCdp {
+    //     length: usize,
+    //     dp_strategy: prio::dp::distributions::ZCdpDiscreteGaussian,
+    // },
     /// The `poplar1` VDAF. Support for this VDAF is experimental.
     Poplar1 { bits: usize },
 

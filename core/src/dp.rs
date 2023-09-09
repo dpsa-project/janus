@@ -2,6 +2,7 @@ use crate::task::VdafInstance;
 #[cfg(feature = "test-util")]
 use crate::test_util::dummy_vdaf::Vdaf;
 use anyhow::anyhow;
+use derivative::Derivative;
 use fixed::traits::Fixed;
 use prio::{
     dp::{
@@ -24,27 +25,28 @@ use serde::{Deserialize, Serialize};
 ////////////////////////////////////////////////////////////////
 // converting into strategy enum
 
-pub fn vdaf_instance_into_strategy_instance(vdaf: &VdafInstance) -> DpStrategyInstance {
-    match vdaf {
-        VdafInstance::Prio3Count
-        | VdafInstance::Prio3CountVec { .. }
-        | VdafInstance::Prio3Sum { .. }
-        | VdafInstance::Prio3SumVec { .. }
-        | VdafInstance::Prio3Histogram { .. }
-        | VdafInstance::Poplar1 { .. } => DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
-        VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { .. }
-        | VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { .. }
-        | VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. } => todo!(),
-        VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp { dp_strategy, .. }
-        | VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp { dp_strategy, .. }
-        | VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp { dp_strategy, .. } => DpStrategyInstance::ZCdpDiscreteGaussian( dp_strategy.clone() ),
+// pub fn vdaf_instance_into_strategy_instance(vdaf: &VdafInstance) -> DpStrategyInstance {
+//     match vdaf {
+//         VdafInstance::Prio3Count
+//         | VdafInstance::Prio3CountVec { .. }
+//         | VdafInstance::Prio3Sum { .. }
+//         | VdafInstance::Prio3SumVec { .. }
+//         | VdafInstance::Prio3Histogram { .. }
+//         | VdafInstance::Poplar1 { .. } => DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
+//         // VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { .. }
+//         // | VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { .. }
+//         // | VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. } => todo!(),
+//         // VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp { dp_strategy, .. }
+//         // | VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp { dp_strategy, .. }
+//         // | VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp { dp_strategy, .. } => DpStrategyInstance::ZCdpDiscreteGaussian( dp_strategy.clone() ),
+//         VdafInstance::Prio3FixedPointBoundedL2VecSum { bitsize, dp_strategy, length } => todo!(),
 
-        #[cfg(feature = "test-util")]
-        VdafInstance::Fake
-        | VdafInstance::FakeFailsPrepInit
-        | VdafInstance::FakeFailsPrepStep => DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
-    }
-}
+//         #[cfg(feature = "test-util")]
+//         VdafInstance::Fake
+//         | VdafInstance::FakeFailsPrepInit
+//         | VdafInstance::FakeFailsPrepStep => DpStrategyInstance::NoDifferentialPrivacy(NoDifferentialPrivacy {}),
+//     }
+// }
 
 
 ////////////////////////////////////////////////////////////////
@@ -76,7 +78,7 @@ impl TryFrom<DpStrategyInstance> for ZCdpDiscreteGaussian {
 
 ////////////////////////////////////////////////////////////////
 // identity strategy
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[derive(Debug, Derivative, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum DpStrategyInstance {
     NoDifferentialPrivacy(NoDifferentialPrivacy),
     ZCdpDiscreteGaussian(ZCdpDiscreteGaussian),
@@ -91,7 +93,7 @@ impl DifferentialPrivacyBudget for NoBudget {}
 pub struct NoDistribution {}
 impl DifferentialPrivacyDistribution for NoDistribution {}
 
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[derive(Debug, Derivative, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct NoDifferentialPrivacy {}
 impl DifferentialPrivacyStrategy for NoDifferentialPrivacy {
     type Budget = NoBudget;

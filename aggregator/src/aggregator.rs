@@ -41,8 +41,8 @@ use janus_core::test_util::dummy_vdaf;
 use janus_core::{
     hpke::{self, HpkeApplicationInfo, HpkeKeypair, Label},
     http::response_to_problem_details,
-    task::{AuthenticationToken, VdafInstance, VERIFY_KEY_LENGTH},
-    time::{Clock, DurationExt, IntervalExt, TimeExt},
+    task::{AuthenticationToken, VdafInstance, VERIFY_KEY_LENGTH, Prio3FixedPointBoundedL2VecSumBitSize},
+    time::{Clock, DurationExt, IntervalExt, TimeExt}, dp::DpStrategyInstance,
 };
 use janus_messages::{
     problem_type::DapProblemType,
@@ -818,60 +818,29 @@ impl<C: Clock> TaskAggregator<C> {
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { length } => {
-                let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>> =
-                    Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
-                let verify_key = task.primary_vdaf_verify_key()?;
-                VdafOps::Prio3FixedPoint16BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
-            }
-
-            #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { length } => {
-                let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>> =
-                    Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
-                let verify_key = task.primary_vdaf_verify_key()?;
-                VdafOps::Prio3FixedPoint32BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
-            }
-
-            #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length } => {
-                let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>> =
-                    Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
-                let verify_key = task.primary_vdaf_verify_key()?;
-                VdafOps::Prio3FixedPoint64BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
-            }
-
-            #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint16BitBoundedL2VecSumZCdp {
+            VdafInstance::Prio3FixedPointBoundedL2VecSum {
+                bitsize,
+                dp_strategy,
                 length,
-                dp_strategy: _,
             } => {
-                let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>> =
-                    Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
                 let verify_key = task.primary_vdaf_verify_key()?;
-                VdafOps::Prio3FixedPoint16BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
-            }
-
-            #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint32BitBoundedL2VecSumZCdp {
-                length,
-                dp_strategy: _,
-            } => {
-                let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>> =
-                    Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
-                let verify_key = task.primary_vdaf_verify_key()?;
-                VdafOps::Prio3FixedPoint32BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
-            }
-
-            #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint64BitBoundedL2VecSumZCdp {
-                length,
-                dp_strategy: _,
-            } => {
-                let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>> =
-                    Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
-                let verify_key = task.primary_vdaf_verify_key()?;
-                VdafOps::Prio3FixedPoint64BitBoundedL2VecSum(Arc::new(vdaf), verify_key)
+                match bitsize {
+                    Prio3FixedPointBoundedL2VecSumBitSize::BitSize16 => {
+                        let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>> =
+                            Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
+                        VdafOps::Prio3FixedPoint16BitBoundedL2VecSum(Arc::new(vdaf), verify_key, vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum::from_vdaf_instance_strategy(dp_strategy.clone()))
+                    },
+                    Prio3FixedPointBoundedL2VecSumBitSize::BitSize32 => {
+                        let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>> =
+                            Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
+                        VdafOps::Prio3FixedPoint32BitBoundedL2VecSum(Arc::new(vdaf), verify_key, vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum::from_vdaf_instance_strategy(dp_strategy.clone()))
+                    },
+                    Prio3FixedPointBoundedL2VecSumBitSize::BitSize64 => {
+                        let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>> =
+                            Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
+                        VdafOps::Prio3FixedPoint64BitBoundedL2VecSum(Arc::new(vdaf), verify_key, vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum::from_vdaf_instance_strategy(dp_strategy.clone()))
+                    },
+                }
             }
 
             VdafInstance::Poplar1 { bits: _ } => {
@@ -1051,6 +1020,27 @@ impl<C: Clock> TaskAggregator<C> {
     }
 }
 
+mod vdaf_ops_strategies {
+    use std::sync::Arc;
+
+    use janus_core::{dp::NoDifferentialPrivacy, task::vdaf_instance_strategies};
+    use prio::dp::distributions::ZCdpDiscreteGaussian;
+
+    pub enum Prio3FixedPointBoundedL2VecSum {
+        NoDifferentialPrivacy(Arc<NoDifferentialPrivacy>),
+        ZCdpDiscreteGaussian(Arc<ZCdpDiscreteGaussian>),
+    }
+
+    impl Prio3FixedPointBoundedL2VecSum {
+        pub fn from_vdaf_instance_strategy(dp_strategy: vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum) -> Self {
+            match dp_strategy {
+                vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy(s) => Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy(Arc::new(s)),
+                vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum::ZCdpDiscreteGaussian(s) => Prio3FixedPointBoundedL2VecSum::ZCdpDiscreteGaussian(Arc::new(s)),
+            }
+        }
+    }
+}
+
 /// VdafOps stores VDAF-specific operations for a TaskAggregator in a non-generic way.
 #[allow(clippy::enum_variant_names)]
 enum VdafOps {
@@ -1059,42 +1049,51 @@ enum VdafOps {
     Prio3Sum(Arc<Prio3Sum>, VerifyKey<VERIFY_KEY_LENGTH>),
     Prio3SumVec(Arc<Prio3SumVecMultithreaded>, VerifyKey<VERIFY_KEY_LENGTH>),
     Prio3Histogram(Arc<Prio3Histogram>, VerifyKey<VERIFY_KEY_LENGTH>),
+    // #[cfg(feature = "fpvec_bounded_l2")]
+    // Prio3FixedPoint16BitBoundedL2VecSum(
+    //     Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>>,
+    //     VerifyKey<VERIFY_KEY_LENGTH>,
+    // ),
+    // #[cfg(feature = "fpvec_bounded_l2")]
+    // Prio3FixedPoint32BitBoundedL2VecSum(
+    //     Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>>,
+    //     VerifyKey<VERIFY_KEY_LENGTH>,
+    // ),
+    // #[cfg(feature = "fpvec_bounded_l2")]
+    // Prio3FixedPoint64BitBoundedL2VecSum(
+    //     Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>>,
+    //     VerifyKey<VERIFY_KEY_LENGTH>,
+    // ),
     #[cfg(feature = "fpvec_bounded_l2")]
     Prio3FixedPoint16BitBoundedL2VecSum(
         Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>>,
         VerifyKey<VERIFY_KEY_LENGTH>,
+        vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum,
     ),
     #[cfg(feature = "fpvec_bounded_l2")]
     Prio3FixedPoint32BitBoundedL2VecSum(
         Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>>,
         VerifyKey<VERIFY_KEY_LENGTH>,
+        vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum,
     ),
     #[cfg(feature = "fpvec_bounded_l2")]
     Prio3FixedPoint64BitBoundedL2VecSum(
         Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>>,
         VerifyKey<VERIFY_KEY_LENGTH>,
-    ),
-    #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint16BitBoundedL2VecSumZCdp(
-        Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>>,
-        VerifyKey<VERIFY_KEY_LENGTH>,
-        Arc<prio::dp::distributions::ZCdpDiscreteGaussian>,
-    ),
-    #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint32BitBoundedL2VecSumZCdp(
-        Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>>,
-        VerifyKey<VERIFY_KEY_LENGTH>,
-        Arc<prio::dp::distributions::ZCdpDiscreteGaussian>,
-    ),
-    #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint64BitBoundedL2VecSumZCdp(
-        Arc<Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>>,
-        VerifyKey<VERIFY_KEY_LENGTH>,
-        Arc<prio::dp::distributions::ZCdpDiscreteGaussian>,
+        vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum,
     ),
     // Poplar1(Arc<Poplar1<PrgSha3, 16>>, VerifyKey<VERIFY_KEY_LENGTH>),
     #[cfg(feature = "test-util")]
     Fake(Arc<dummy_vdaf::Vdaf>),
+}
+
+macro_rules! if_ident_exists {
+    ($token:ident, true => $body1:tt, false => $body2:tt) => {
+        $body1
+    };
+    (, true => $body1:tt, false => $body2:tt) => {
+        $body2
+    };
 }
 
 /// Emits a match block dispatching on a [`VdafOps`] object. Takes a `&VdafOps` as the first
@@ -1103,129 +1102,240 @@ enum VdafOps {
 /// specify the VDAF's type, and the name of a const that will be set to the VDAF's verify key
 /// length, also for explicitly specifying type parameters.
 macro_rules! vdaf_ops_dispatch {
-    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident, $DpStrategy:ident, $bool:tt, $dp_strategy:pat_param) => $body:tt) => {
+    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_ops {
             crate::aggregator::VdafOps::Prio3Count(vdaf, verify_key) => {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
-                let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Count;
-                ::janus_core::strategy_alias!($bool, $DpStrategy, janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
+                )?
                 $body
             }
 
             crate::aggregator::VdafOps::Prio3CountVec(vdaf, verify_key) => {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
-                let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
                 type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;
-                ::janus_core::strategy_alias!($bool, $DpStrategy, janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
+                )?
                 $body
             }
 
             crate::aggregator::VdafOps::Prio3Sum(vdaf, verify_key) => {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
-                let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Sum;
-                ::janus_core::strategy_alias!($bool, $DpStrategy, janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
+                )?
                 $body
             }
 
             crate::aggregator::VdafOps::Prio3SumVec(vdaf, verify_key) => {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
-                let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
                 type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;
-                ::janus_core::strategy_alias!($bool, $DpStrategy, janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
+                )?
                 $body
             }
 
             crate::aggregator::VdafOps::Prio3Histogram(vdaf, verify_key) => {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
-                let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Histogram;
-                ::janus_core::strategy_alias!($bool, $DpStrategy, janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
+                )?
                 $body
             }
 
+            // #[cfg(feature = "fpvec_bounded_l2")]
+            // crate::aggregator::VdafOps::Prio3FixedPoint16BitBoundedL2VecSum(vdaf, verify_key) => {
+            //     let $vdaf = vdaf;
+            //     let $verify_key = verify_key;
+            //     type $Vdaf =
+            //         ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>;
+            //     const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+            //     $(
+            //         type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+            //         let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
+            //     )?
+            //     $body
+            // }
+
+            // #[cfg(feature = "fpvec_bounded_l2")]
+            // crate::aggregator::VdafOps::Prio3FixedPoint32BitBoundedL2VecSum(vdaf, verify_key) => {
+            //     let $vdaf = vdaf;
+            //     let $verify_key = verify_key;
+            //     type $Vdaf =
+            //         ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>;
+            //     const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+            //     $(
+            //         type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+            //         let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
+            //     )?
+            //     $body
+            // }
+
+            // #[cfg(feature = "fpvec_bounded_l2")]
+            // crate::aggregator::VdafOps::Prio3FixedPoint64BitBoundedL2VecSum(vdaf, verify_key) => {
+            //     let $vdaf = vdaf;
+            //     let $verify_key = verify_key;
+            //     type $Vdaf =
+            //         ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>;
+            //     const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+            //     $(
+            //         type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+            //         let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
+            //     )?
+            //     $body
+            // }
+
             #[cfg(feature = "fpvec_bounded_l2")]
-            crate::aggregator::VdafOps::Prio3FixedPoint16BitBoundedL2VecSum(vdaf, verify_key) => {
+            crate::aggregator::VdafOps::Prio3FixedPoint16BitBoundedL2VecSum(vdaf, verify_key, _dp_strategy) => {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
-                let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
-                type $Vdaf =
-                    ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>;
-                ::janus_core::strategy_alias!($bool, $DpStrategy,  janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
+
+                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>;
+
+                if_ident_exists!(
+                    $($DpStrategy)?,
+                    true => {
+                        match _dp_strategy {
+                            vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum::ZCdpDiscreteGaussian(strategy) => {
+                                $(
+                                    type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                                    let $dp_strategy = &strategy;
+                                )?
+                                $body
+                            },
+                            vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy(strategy) => {
+                                $(
+                                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                                    let $dp_strategy = &strategy;
+                                )?
+                                $body
+                            }
+                        }
+                    },
+                    false => {
+                        $body
+                    }
+                )
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            crate::aggregator::VdafOps::Prio3FixedPoint32BitBoundedL2VecSum(vdaf, verify_key) => {
+            crate::aggregator::VdafOps::Prio3FixedPoint32BitBoundedL2VecSum(vdaf, verify_key, _dp_strategy) => {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
-                let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
-                type $Vdaf =
-                    ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>;
-                ::janus_core::strategy_alias!($bool, $DpStrategy,  janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
+
+                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>;
+
+                if_ident_exists!(
+                    $($DpStrategy)?,
+                    true => {
+                        match _dp_strategy {
+                            vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum::ZCdpDiscreteGaussian(strategy) => {
+                                $(
+                                    type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                                    let $dp_strategy = &strategy;
+                                )?
+                                $body
+                            },
+                            vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy(strategy) => {
+                                $(
+                                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                                    let $dp_strategy = &strategy;
+                                )?
+                                $body
+                            }
+                        }
+                    },
+                    false => {
+                        $body
+                    }
+                )
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            crate::aggregator::VdafOps::Prio3FixedPoint64BitBoundedL2VecSum(vdaf, verify_key) => {
+            crate::aggregator::VdafOps::Prio3FixedPoint64BitBoundedL2VecSum(vdaf, verify_key, _dp_strategy) => {
                 let $vdaf = vdaf;
                 let $verify_key = verify_key;
-                let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
-                type $Vdaf =
-                    ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>;
-                ::janus_core::strategy_alias!($bool, $DpStrategy,  janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
+
+                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>;
+
+                if_ident_exists!(
+                    $($DpStrategy)?,
+                    true => {
+                        match _dp_strategy {
+                           vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum::ZCdpDiscreteGaussian(strategy) => {
+                                $(
+                                    type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                                    let $dp_strategy = &strategy;
+                                )?
+                                $body
+                            },
+                            vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy(strategy) => {
+                                $(
+                                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                                    let $dp_strategy = &strategy;
+                                )?
+                                $body
+                            }
+                        }
+                    },
+                    false => {
+                        $body
+                    }
+                )
             }
 
-            #[cfg(feature = "fpvec_bounded_l2")]
-            crate::aggregator::VdafOps::Prio3FixedPoint16BitBoundedL2VecSumZCdp(vdaf, verify_key, dp_strategy) => {
-                let $vdaf = vdaf;
-                let $verify_key = verify_key;
-                let $dp_strategy = dp_strategy;
-                type $Vdaf =
-                    ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>;
-                ::janus_core::strategy_alias!($bool, $DpStrategy, ::prio::dp::distributions::ZCdpDiscreteGaussian);
-                const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
-            }
 
-            #[cfg(feature = "fpvec_bounded_l2")]
-            crate::aggregator::VdafOps::Prio3FixedPoint32BitBoundedL2VecSumZCdp(vdaf, verify_key, dp_strategy) => {
-                let $vdaf = vdaf;
-                let $verify_key = verify_key;
-                let $dp_strategy = dp_strategy;
-                type $Vdaf =
-                    ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>;
-                ::janus_core::strategy_alias!($bool, $DpStrategy, ::prio::dp::distributions::ZCdpDiscreteGaussian);
-                const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
-            }
+            // #[cfg(feature = "fpvec_bounded_l2")]
+            // crate::aggregator::VdafOps::Prio3FixedPoint32BitBoundedL2VecSumZCdp(vdaf, verify_key, dp_strategy) => {
+            //     let $vdaf = vdaf;
+            //     let $verify_key = verify_key;
+            //     type $Vdaf =
+            //         ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>;
+            //     const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+            //     $(
+            //         type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+            //         let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
+            //     )?
+            //     $body
+            // }
 
-            #[cfg(feature = "fpvec_bounded_l2")]
-            crate::aggregator::VdafOps::Prio3FixedPoint64BitBoundedL2VecSumZCdp(vdaf, verify_key, dp_strategy) => {
-                let $vdaf = vdaf;
-                let $verify_key = verify_key;
-                let $dp_strategy = dp_strategy;
-                type $Vdaf =
-                    ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>;
-                ::janus_core::strategy_alias!($bool, $DpStrategy, ::prio::dp::distributions::ZCdpDiscreteGaussian);
-                const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
-            }
+            // #[cfg(feature = "fpvec_bounded_l2")]
+            // crate::aggregator::VdafOps::Prio3FixedPoint64BitBoundedL2VecSumZCdp(vdaf, verify_key, dp_strategy) => {
+            //     let $vdaf = vdaf;
+            //     let $verify_key = verify_key;
+            //     type $Vdaf =
+            //         ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>;
+            //     const $VERIFY_KEY_LENGTH: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+            //     $(
+            //         type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+            //         let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
+            //     )?
+            //     $body
+            // }
 
             // crate::aggregator::VdafOps::Poplar1(vdaf, verify_key) => {
             //     let $vdaf = vdaf;
@@ -1239,19 +1349,21 @@ macro_rules! vdaf_ops_dispatch {
             crate::aggregator::VdafOps::Fake(vdaf) => {
                 let $vdaf = vdaf;
                 let $verify_key = &VerifyKey::new([]);
-                let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
-                ::janus_core::strategy_alias!($bool, $DpStrategy, janus_core::dp::NoDifferentialPrivacy);
                 const $VERIFY_KEY_LENGTH: usize = 0;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = &Arc::new(janus_core::dp::NoDifferentialPrivacy {});
+                )?
                 $body
             }
         }
     };
 
-    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident) => $body:tt) => {
-        vdaf_ops_dispatch!($vdaf_ops, ($vdaf, $verify_key, $Vdaf, $VERIFY_KEY_LENGTH, DONTUSETHIS, false, _) => $body)};
-    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident, $strat:ident, $dp_strategy:pat_param) => $body:tt) => {
-        vdaf_ops_dispatch!($vdaf_ops, ($vdaf, $verify_key, $Vdaf, $VERIFY_KEY_LENGTH, $strat, true, $dp_strategy) => $body)};
+    ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
+        vdaf_ops_dispatch!($vdaf_ops, ($vdaf, $verify_key, $Vdaf, $VERIFY_KEY_LENGTH $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body)};
+    // ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident, $strat:ident, $dp_strategy:pat_param) => $body:tt) => {
+    //     vdaf_ops_dispatch!($vdaf_ops, ($vdaf, $verify_key, $Vdaf, $VERIFY_KEY_LENGTH, $strat, true, $dp_strategy) => $body)};
 }
 
 // macro_rules! vdaf_ops_dispatch {
@@ -2872,6 +2984,7 @@ impl VdafOps {
     where
         A::AggregationParam: Send + Sync + Eq + Hash,
         A::AggregateShare: Send + Sync,
+        S: Send + Sync,
     {
         // Decode request, and verify that it is for the current task. We use an assert to check
         // that the task IDs match as this should be guaranteed by the caller.
@@ -2913,7 +3026,7 @@ impl VdafOps {
                     Arc::clone(&task),
                     Arc::clone(&vdaf),
                     Arc::clone(&aggregate_share_req),
-                    Arc::clone(&dp_strategy),
+                    Arc::clone(&dp_strategy)
                 );
                 Box::pin(async move {
                     // Check if we have already serviced an aggregate share request with these
@@ -2988,7 +3101,7 @@ impl VdafOps {
                             // })?;
 
                             vdaf.add_noise_to_agg_share(
-                                &dp_strategy.as_ref(),
+                                &dp_strategy,
                                 &aggregation_param,
                                 &mut helper_aggregate_share,
                                 report_count.try_into()?,

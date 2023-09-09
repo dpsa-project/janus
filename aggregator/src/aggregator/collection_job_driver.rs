@@ -16,7 +16,7 @@ use janus_aggregator_core::{
     },
     task,
 };
-use janus_core::{time::Clock, vdaf_dispatch, dp::{vdaf_instance_into_strategy_instance, DpStrategyInstance}};
+use janus_core::{time::Clock, vdaf_dispatch, dp::DpStrategyInstance};
 use janus_messages::{
     query_type::{FixedSize, QueryType, TimeInterval},
     AggregateShare, AggregateShareReq, BatchSelector,
@@ -80,7 +80,7 @@ impl CollectionJobDriver {
         datastore: Arc<Datastore<C>>,
         lease: Arc<Lease<AcquiredCollectionJob>>,
     ) -> Result<(), Error> {
-        let dp_strategy = vdaf_instance_into_strategy_instance(lease.leased().vdaf());
+        let dp_strategy = todo!(); // vdaf_instance_into_strategy_instance(lease.leased().vdaf());
         match lease.leased().query_type() {
             task::QueryType::TimeInterval => {
                 vdaf_dispatch!(lease.leased().vdaf(), (vdaf, VdafType, VERIFY_KEY_LENGTH, DpStrategy) => {
