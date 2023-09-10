@@ -25,10 +25,10 @@ pub enum Prio3FixedPointBoundedL2VecSumBitSize {
 }
 
 pub mod vdaf_instance_strategies {
+    use crate::dp::NoDifferentialPrivacy;
     use derivative::Derivative;
     use prio::dp::distributions::ZCdpDiscreteGaussian;
-    use serde::{Serialize, Deserialize};
-    use crate::dp::NoDifferentialPrivacy;
+    use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Derivative, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
     pub enum Prio3FixedPointBoundedL2VecSum {
@@ -57,7 +57,11 @@ pub enum VdafInstance {
     Prio3Histogram { length: usize },
     /// A `Prio3` fixed point vector sum with bounded L2 norm.
     #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPointBoundedL2VecSum { bitsize: Prio3FixedPointBoundedL2VecSumBitSize, dp_strategy: vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum, length: usize },
+    Prio3FixedPointBoundedL2VecSum {
+        bitsize: Prio3FixedPointBoundedL2VecSumBitSize,
+        dp_strategy: vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum,
+        length: usize,
+    },
     // /// A `Prio3` 16-bit fixed point vector sum with bounded L2 norm.
     // #[cfg(feature = "fpvec_bounded_l2")]
     // Prio3FixedPoint16BitBoundedL2VecSum { length: usize },
