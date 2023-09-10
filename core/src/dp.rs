@@ -1,8 +1,9 @@
-use crate::task::VdafInstance;
+// use crate::task::VdafInstance;
 #[cfg(feature = "test-util")]
 use crate::test_util::dummy_vdaf::Vdaf;
 use anyhow::anyhow;
 use derivative::Derivative;
+#[cfg(feature = "fpvec_bounded_l2")]
 use fixed::traits::Fixed;
 use prio::{
     dp::{
@@ -166,3 +167,14 @@ macro_rules! strategy_alias {
         type $DpStrategy = $type;
     };
 }
+
+#[macro_export]
+macro_rules! if_ident_exists {
+    ($token:ident, true => $body1:tt, false => $body2:tt) => {
+        $body1
+    };
+    (, true => $body1:tt, false => $body2:tt) => {
+        $body2
+    };
+}
+

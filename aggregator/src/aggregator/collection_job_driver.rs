@@ -80,10 +80,9 @@ impl CollectionJobDriver {
         datastore: Arc<Datastore<C>>,
         lease: Arc<Lease<AcquiredCollectionJob>>,
     ) -> Result<(), Error> {
-        let dp_strategy = todo!(); // vdaf_instance_into_strategy_instance(lease.leased().vdaf());
         match lease.leased().query_type() {
             task::QueryType::TimeInterval => {
-                vdaf_dispatch!(lease.leased().vdaf(), (vdaf, VdafType, VERIFY_KEY_LENGTH, DpStrategy) => {
+                vdaf_dispatch!(lease.leased().vdaf(), (vdaf, VdafType, VERIFY_KEY_LENGTH, DpStrategy, dp_strategy) => {
                     self.step_collection_job_generic::<
                         VERIFY_KEY_LENGTH,
                         C,
@@ -95,7 +94,7 @@ impl CollectionJobDriver {
                 })
             }
             task::QueryType::FixedSize { .. } => {
-                vdaf_dispatch!(lease.leased().vdaf(), (vdaf, VdafType, VERIFY_KEY_LENGTH, DpStrategy) => {
+                vdaf_dispatch!(lease.leased().vdaf(), (vdaf, VdafType, VERIFY_KEY_LENGTH, DpStrategy, dp_strategy) => {
                     self.step_collection_job_generic::<
                         VERIFY_KEY_LENGTH,
                         C,
@@ -120,7 +119,7 @@ impl CollectionJobDriver {
         datastore: Arc<Datastore<C>>,
         vdaf: Arc<A>,
         lease: Arc<Lease<AcquiredCollectionJob>>,
-        dp_strategy: DpStrategyInstance,
+        dp_strategy: S,
     ) -> Result<(), Error>
     where
         A: 'static,
@@ -218,14 +217,8 @@ impl CollectionJobDriver {
                 .await
                 .map_err(|e| datastore::Error::User(e.into()))?;
 
-        let strategy = S::try_from(dp_strategy).map_err(|_| {
-            datastore::Error::DifferentialPrivacy(format!(
-                "The strategy is not compatible with the chosen VDAF."
-            ))
-        })?;
-
         vdaf.add_noise_to_agg_share(
-            &strategy,
+            &dp_strategy,
             &collection_job.aggregation_parameter(),
             &mut leader_aggregate_share,
             report_count.try_into()?,

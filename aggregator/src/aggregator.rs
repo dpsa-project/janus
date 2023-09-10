@@ -1087,15 +1087,6 @@ enum VdafOps {
     Fake(Arc<dummy_vdaf::Vdaf>),
 }
 
-macro_rules! if_ident_exists {
-    ($token:ident, true => $body1:tt, false => $body2:tt) => {
-        $body1
-    };
-    (, true => $body1:tt, false => $body2:tt) => {
-        $body2
-    };
-}
-
 /// Emits a match block dispatching on a [`VdafOps`] object. Takes a `&VdafOps` as the first
 /// argument, followed by a pseudo-pattern and body. The pseudo-pattern takes variable names for the
 /// constructed VDAF and the verify key, a type alias name that the block can use to explicitly
@@ -1214,7 +1205,7 @@ macro_rules! vdaf_ops_dispatch {
 
                 type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>>;
 
-                if_ident_exists!(
+                janus_core::if_ident_exists!(
                     $($DpStrategy)?,
                     true => {
                         match _dp_strategy {
@@ -1248,7 +1239,7 @@ macro_rules! vdaf_ops_dispatch {
 
                 type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>>;
 
-                if_ident_exists!(
+                janus_core::if_ident_exists!(
                     $($DpStrategy)?,
                     true => {
                         match _dp_strategy {
@@ -1282,7 +1273,7 @@ macro_rules! vdaf_ops_dispatch {
 
                 type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>>;
 
-                if_ident_exists!(
+                janus_core::if_ident_exists!(
                     $($DpStrategy)?,
                     true => {
                         match _dp_strategy {
@@ -1361,7 +1352,7 @@ macro_rules! vdaf_ops_dispatch {
     };
 
     ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
-        vdaf_ops_dispatch!($vdaf_ops, ($vdaf, $verify_key, $Vdaf, $VERIFY_KEY_LENGTH $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body)};
+        vdaf_ops_dispatch!($vdaf_ops, ($vdaf, $verify_key, $Vdaf, $VERIFY_KEY_LENGTH $(, $DpStrategy, $dp_strategy )?) => $body)};
     // ($vdaf_ops:expr, ($vdaf:pat_param, $verify_key:pat_param, $Vdaf:ident, $VERIFY_KEY_LENGTH:ident, $strat:ident, $dp_strategy:pat_param) => $body:tt) => {
     //     vdaf_ops_dispatch!($vdaf_ops, ($vdaf, $verify_key, $Vdaf, $VERIFY_KEY_LENGTH, $strat, true, $dp_strategy) => $body)};
 }
