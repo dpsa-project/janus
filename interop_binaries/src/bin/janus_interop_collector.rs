@@ -9,7 +9,7 @@ use fixed::{FixedI16, FixedI32, FixedI64};
 use janus_collector::{Collector, CollectorParameters};
 use janus_core::{
     hpke::HpkeKeypair,
-    task::{AuthenticationToken, VdafInstance},
+    task::{Prio3FixedPointBoundedL2VecSumBitSize, AuthenticationToken, VdafInstance},
 };
 use janus_interop_binaries::Keyring;
 use janus_interop_binaries::{
