@@ -1126,7 +1126,7 @@ mod tests {
             &[
                 Token::Struct {
                     name: "SerializedTask",
-                    len: 18,
+                    len: 17,
                 },
                 Token::Str("task_id"),
                 Token::Some,
@@ -1313,7 +1313,7 @@ mod tests {
             &[
                 Token::Struct {
                     name: "SerializedTask",
-                    len: 18,
+                    len: 17,
                 },
                 Token::Str("task_id"),
                 Token::Some,
