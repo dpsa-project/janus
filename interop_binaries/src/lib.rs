@@ -1,18 +1,14 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use janus_aggregator_core::task::{QueryType, Task};
 use janus_core::{
-    dp::NoDifferentialPrivacy,
     hpke::{generate_hpke_config_and_private_key, HpkeKeypair},
-    task::{Prio3FixedPointBoundedL2VecSumBitSize, vdaf_instance_strategies, VdafInstance},
+    task::{vdaf_instance_strategies, Prio3FixedPointBoundedL2VecSumBitSize, VdafInstance},
 };
 use janus_messages::{
     query_type::{FixedSize, QueryType as _, TimeInterval},
     HpkeAeadId, HpkeConfigId, HpkeKdfId, HpkeKemId, Role, TaskId, Time,
 };
-use prio::{
-    codec::Encode,
-    dp::{distributions::ZCdpDiscreteGaussian, DifferentialPrivacyStrategy, Rational, ZCdpBudget},
-};
+use prio::codec::Encode;
 use rand::random;
 use serde::{de::Visitor, Deserialize, Serialize};
 use std::{

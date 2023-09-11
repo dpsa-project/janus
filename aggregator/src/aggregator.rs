@@ -41,8 +41,10 @@ use janus_core::test_util::dummy_vdaf;
 use janus_core::{
     hpke::{self, HpkeApplicationInfo, HpkeKeypair, Label},
     http::response_to_problem_details,
-    task::{AuthenticationToken, VdafInstance, VERIFY_KEY_LENGTH, Prio3FixedPointBoundedL2VecSumBitSize},
-    time::{Clock, DurationExt, IntervalExt, TimeExt}, dp::DpStrategyInstance,
+    task::{
+        AuthenticationToken, Prio3FixedPointBoundedL2VecSumBitSize, VdafInstance, VERIFY_KEY_LENGTH,
+    },
+    time::{Clock, DurationExt, IntervalExt, TimeExt},
 };
 use janus_messages::{
     problem_type::DapProblemType,
@@ -829,17 +831,17 @@ impl<C: Clock> TaskAggregator<C> {
                         let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI16<U15>> =
                             Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
                         VdafOps::Prio3FixedPoint16BitBoundedL2VecSum(Arc::new(vdaf), verify_key, vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum::from_vdaf_instance_strategy(dp_strategy.clone()))
-                    },
+                    }
                     Prio3FixedPointBoundedL2VecSumBitSize::BitSize32 => {
                         let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI32<U31>> =
                             Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
                         VdafOps::Prio3FixedPoint32BitBoundedL2VecSum(Arc::new(vdaf), verify_key, vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum::from_vdaf_instance_strategy(dp_strategy.clone()))
-                    },
+                    }
                     Prio3FixedPointBoundedL2VecSumBitSize::BitSize64 => {
                         let vdaf: Prio3FixedPointBoundedL2VecSumMultithreaded<FixedI64<U63>> =
                             Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, *length)?;
                         VdafOps::Prio3FixedPoint64BitBoundedL2VecSum(Arc::new(vdaf), verify_key, vdaf_ops_strategies::Prio3FixedPointBoundedL2VecSum::from_vdaf_instance_strategy(dp_strategy.clone()))
-                    },
+                    }
                 }
             }
 
@@ -1032,10 +1034,16 @@ mod vdaf_ops_strategies {
     }
 
     impl Prio3FixedPointBoundedL2VecSum {
-        pub fn from_vdaf_instance_strategy(dp_strategy: vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum) -> Self {
+        pub fn from_vdaf_instance_strategy(
+            dp_strategy: vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum,
+        ) -> Self {
             match dp_strategy {
-                vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy(s) => Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy(Arc::new(s)),
-                vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum::ZCdpDiscreteGaussian(s) => Prio3FixedPointBoundedL2VecSum::ZCdpDiscreteGaussian(Arc::new(s)),
+                vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy(
+                    s,
+                ) => Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy(Arc::new(s)),
+                vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum::ZCdpDiscreteGaussian(
+                    s,
+                ) => Prio3FixedPointBoundedL2VecSum::ZCdpDiscreteGaussian(Arc::new(s)),
             }
         }
     }
@@ -3017,7 +3025,7 @@ impl VdafOps {
                     Arc::clone(&task),
                     Arc::clone(&vdaf),
                     Arc::clone(&aggregate_share_req),
-                    Arc::clone(&dp_strategy)
+                    Arc::clone(&dp_strategy),
                 );
                 Box::pin(async move {
                     // Check if we have already serviced an aggregate share request with these

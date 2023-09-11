@@ -8,8 +8,6 @@ use serde::{de::Error, Deserialize, Deserializer, Serialize};
 use std::str;
 use url::Url;
 
-use crate::dp::DpStrategyInstance;
-
 /// HTTP header where auth tokens are provided in messages between participants.
 pub const DAP_AUTH_HEADER: &str = "DAP-Auth-Token";
 
@@ -31,6 +29,7 @@ pub mod vdaf_instance_strategies {
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Derivative, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    #[serde(tag = "dp_strategy")]
     pub enum Prio3FixedPointBoundedL2VecSum {
         NoDifferentialPrivacy(NoDifferentialPrivacy),
         ZCdpDiscreteGaussian(ZCdpDiscreteGaussian),
@@ -504,7 +503,7 @@ macro_rules! vdaf_dispatch_impl {
                 ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
-            ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { .. } => {
+            ::janus_core::task::VdafInstance::Prio3FixedPointBoundedL2VecSum { .. } => {
                 ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 

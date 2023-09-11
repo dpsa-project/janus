@@ -9,7 +9,7 @@ use fixed::{FixedI16, FixedI32, FixedI64};
 use janus_collector::{Collector, CollectorParameters};
 use janus_core::{
     hpke::HpkeKeypair,
-    task::{Prio3FixedPointBoundedL2VecSumBitSize, AuthenticationToken, VdafInstance},
+    task::{AuthenticationToken, Prio3FixedPointBoundedL2VecSumBitSize, VdafInstance},
 };
 use janus_interop_binaries::Keyring;
 use janus_interop_binaries::{
@@ -384,7 +384,7 @@ async fn handle_collection_start(
             ParsedQuery::TimeInterval(batch_interval),
             janus_core::task::VdafInstance::Prio3FixedPointBoundedL2VecSum {
                 bitsize,
-                dp_strategy,
+                dp_strategy: _,
                 length,
             },
         ) => match bitsize {
@@ -481,7 +481,7 @@ async fn handle_collection_start(
             ParsedQuery::FixedSize(fixed_size_query),
             janus_core::task::VdafInstance::Prio3FixedPointBoundedL2VecSum {
                 bitsize,
-                dp_strategy,
+                dp_strategy: _,
                 length,
             },
         ) => match bitsize {

@@ -2,7 +2,6 @@ use backoff::{backoff::Backoff, ExponentialBackoffBuilder};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use futures::future::join_all;
 use janus_core::{
-    dp::NoDifferentialPrivacy,
     task::VERIFY_KEY_LENGTH,
     test_util::{install_test_trace_subscriber, testcontainers::container_client},
     time::{Clock, RealClock, TimeExt},
@@ -279,7 +278,6 @@ async fn run(
             .unwrap()
             .insert("max_batch_size".to_string(), max_batch_size.clone());
     }
-    println!("request pody{:?}", leader_add_task_request_body);
     let leader_add_task_response = http_client
         .post(
             local_leader_endpoint
@@ -694,7 +692,10 @@ async fn e2e_prio3_fixed16vec() {
     let fp16_16_inv = fixed!(0.0625: I1F15);
     let result = run(
         QueryKind::TimeInterval,
-        json!({"type": "Prio3FixedPoint16BitBoundedL2VecSum", "length": "3"}),
+        json!({"type": "Prio3FixedPointBoundedL2VecSum",
+               "bitsize": "BitSize16",
+               "dp_strategy": json!( {"dp_strategy": "NoDifferentialPrivacy"}),
+               "length": "3"}),
         &[
             json!([
                 fp16_4_inv.to_string(),
@@ -730,7 +731,10 @@ async fn e2e_prio3_fixed32vec() {
     let fp32_16_inv = fixed!(0.0625: I1F31);
     let result = run(
         QueryKind::TimeInterval,
-        json!({"type": "Prio3FixedPoint32BitBoundedL2VecSum", "length": "3"}),
+        json!({"type": "Prio3FixedPointBoundedL2VecSum",
+               "bitsize": "BitSize32",
+               "dp_strategy": json!( {"dp_strategy": "NoDifferentialPrivacy"}),
+               "length": "3"}),
         &[
             json!([
                 fp32_4_inv.to_string(),
@@ -766,7 +770,10 @@ async fn e2e_prio3_fixed64vec() {
     let fp64_16_inv = fixed!(0.0625: I1F63);
     let result = run(
         QueryKind::TimeInterval,
-        json!({"type": "Prio3FixedPoint64BitBoundedL2VecSum", "length": "3"}),
+        json!({"type": "Prio3FixedPointBoundedL2VecSum",
+               "bitsize": "BitSize64",
+               "dp_strategy": json!( {"dp_strategy": "NoDifferentialPrivacy"}),
+               "length": "3"}),
         &[
             json!([
                 fp64_4_inv.to_string(),
@@ -802,7 +809,10 @@ async fn e2e_prio3_fixed16vec_fixed_size() {
     let fp16_16_inv = fixed!(0.0625: I1F15);
     let result = run(
         QueryKind::FixedSize,
-        json!({"type": "Prio3FixedPoint16BitBoundedL2VecSum", "length": "3"}),
+        json!({"type": "Prio3FixedPointBoundedL2VecSum",
+               "bitsize": "BitSize16",
+               "dp_strategy": json!( {"dp_strategy": "NoDifferentialPrivacy"}),
+               "length": "3"}),
         &[
             json!([
                 fp16_4_inv.to_string(),
@@ -838,7 +848,10 @@ async fn e2e_prio3_fixed32vec_fixed_size() {
     let fp32_16_inv = fixed!(0.0625: I1F31);
     let result = run(
         QueryKind::FixedSize,
-        json!({"type": "Prio3FixedPoint32BitBoundedL2VecSum", "length": "3"}),
+        json!({"type": "Prio3FixedPointBoundedL2VecSum",
+               "bitsize": "BitSize32",
+               "dp_strategy": json!( {"dp_strategy": "NoDifferentialPrivacy"}),
+               "length": "3"}),
         &[
             json!([
                 fp32_4_inv.to_string(),
@@ -874,7 +887,10 @@ async fn e2e_prio3_fixed64vec_fixed_size() {
     let fp64_16_inv = fixed!(0.0625: I1F63);
     let result = run(
         QueryKind::FixedSize,
-        json!({"type": "Prio3FixedPoint64BitBoundedL2VecSum", "length": "3"}),
+        json!({"type": "Prio3FixedPointBoundedL2VecSum",
+               "bitsize": "BitSize64",
+               "dp_strategy": json!( {"dp_strategy": "NoDifferentialPrivacy"}),
+               "length": "3"}),
         &[
             json!([
                 fp64_4_inv.to_string(),
