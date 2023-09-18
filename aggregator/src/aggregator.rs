@@ -67,8 +67,8 @@ use prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded;
 use prio::vdaf::{PrepareTransition, VdafError};
 use prio::{
     codec::{Decode, Encode, ParameterizedDecode},
-    topology::ping_pong::{PingPongState, PingPongTopology},
     dp::DifferentialPrivacyStrategy,
+    topology::ping_pong::{PingPongState, PingPongTopology},
     vdaf::{
         self,
         poplar1::Poplar1,
@@ -1057,7 +1057,9 @@ mod vdaf_ops_strategies {
             dp_strategy: vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum,
         ) -> Self {
             match dp_strategy {
-                vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy => Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy,
+                vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy => {
+                    Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy
+                }
                 vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum::ZCdpDiscreteGaussian(
                     s,
                 ) => Prio3FixedPointBoundedL2VecSum::ZCdpDiscreteGaussian(Arc::new(s)),
