@@ -734,6 +734,7 @@ mod tests {
   aggregator_auth_tokens: []
   collector_auth_tokens: []
   hpke_keys: []
+  dp_strategy: !NoDifferentialPrivacy
 - leader_aggregator_endpoint: https://leader
   helper_aggregator_endpoint: https://helper
   query_type: TimeInterval
@@ -756,6 +757,7 @@ mod tests {
   aggregator_auth_tokens: []
   collector_auth_tokens: []
   hpke_keys: []
+  dp_strategy: !NoDifferentialPrivacy
 "#;
 
         let ephemeral_datastore = ephemeral_datastore().await;

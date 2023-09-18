@@ -2499,6 +2499,7 @@ dependencies = [
  "num-bigint",
  "num-integer",
  "num-traits",
+ "serde",
 ]
 
 [[package]]
@@ -2938,8 +2939,7 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 [[package]]
 name = "prio"
 version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2e546dc580118e2120309c8aa7bb0da8deabd4b848289c486e9429a27c05594"
+source = "git+https://github.com/dpsa4fl/libprio-rs.git?branch=dp-update-for-janus-rebased#caf3a0bb70ac2660d902123f4320cde444fc51e8"
 dependencies = [
  "aes",
  "bitvec",

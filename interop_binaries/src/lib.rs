@@ -1,5 +1,7 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use janus_aggregator_core::task::{QueryType, Task};
+#[cfg(feature = "fpvec_bounded_l2")]
+use janus_core::task::{vdaf_instance_strategies, Prio3FixedPointBoundedL2VecSumBitSize};
 use janus_core::{
     hpke::{generate_hpke_config_and_private_key, HpkeKeypair},
     task::VdafInstance,
@@ -120,15 +122,9 @@ pub enum VdafObject {
         length: NumberAsString<usize>,
     },
     #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint16BitBoundedL2VecSum {
-        length: NumberAsString<usize>,
-    },
-    #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint32BitBoundedL2VecSum {
-        length: NumberAsString<usize>,
-    },
-    #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint64BitBoundedL2VecSum {
+    Prio3FixedPointBoundedL2VecSum {
+        bitsize: Prio3FixedPointBoundedL2VecSumBitSize,
+        dp_strategy: vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum,
         length: NumberAsString<usize>,
     },
 }
@@ -156,25 +152,16 @@ impl From<VdafInstance> for VdafObject {
             },
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { length } => {
-                VdafObject::Prio3FixedPoint16BitBoundedL2VecSum {
-                    length: NumberAsString(length),
-                }
-            }
+            VdafInstance::Prio3FixedPointBoundedL2VecSum {
+                bitsize,
+                dp_strategy,
+                length,
+            } => VdafObject::Prio3FixedPointBoundedL2VecSum {
+                bitsize,
+                dp_strategy,
+                length: NumberAsString(length),
+            },
 
-            #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { length } => {
-                VdafObject::Prio3FixedPoint32BitBoundedL2VecSum {
-                    length: NumberAsString(length),
-                }
-            }
-
-            #[cfg(feature = "fpvec_bounded_l2")]
-            VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length } => {
-                VdafObject::Prio3FixedPoint64BitBoundedL2VecSum {
-                    length: NumberAsString(length),
-                }
-            }
             _ => panic!("Unsupported VDAF: {vdaf:?}"),
         }
     }
@@ -201,19 +188,15 @@ impl From<VdafObject> for VdafInstance {
             }
 
             #[cfg(feature = "fpvec_bounded_l2")]
-            VdafObject::Prio3FixedPoint16BitBoundedL2VecSum { length } => {
-                VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { length: length.0 }
-            }
-
-            #[cfg(feature = "fpvec_bounded_l2")]
-            VdafObject::Prio3FixedPoint32BitBoundedL2VecSum { length } => {
-                VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { length: length.0 }
-            }
-
-            #[cfg(feature = "fpvec_bounded_l2")]
-            VdafObject::Prio3FixedPoint64BitBoundedL2VecSum { length } => {
-                VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length: length.0 }
-            }
+            VdafObject::Prio3FixedPointBoundedL2VecSum {
+                bitsize,
+                dp_strategy,
+                length,
+            } => VdafInstance::Prio3FixedPointBoundedL2VecSum {
+                bitsize,
+                dp_strategy,
+                length: length.0,
+            },
         }
     }
 }

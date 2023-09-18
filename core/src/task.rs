@@ -14,6 +14,28 @@ pub const DAP_AUTH_HEADER: &str = "DAP-Auth-Token";
 /// The length of the verify key parameter for Prio3 & Poplar1 VDAF instantiations.
 pub const VERIFY_KEY_LENGTH: usize = 16;
 
+#[cfg(feature = "fpvec_bounded_l2")]
+#[derive(Debug, Derivative, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum Prio3FixedPointBoundedL2VecSumBitSize {
+    BitSize16,
+    BitSize32,
+    BitSize64,
+}
+
+#[cfg(feature = "fpvec_bounded_l2")]
+pub mod vdaf_instance_strategies {
+    use derivative::Derivative;
+    use prio::dp::distributions::ZCdpDiscreteGaussian;
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Debug, Derivative, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    #[serde(tag = "dp_strategy")]
+    pub enum Prio3FixedPointBoundedL2VecSum {
+        NoDifferentialPrivacy,
+        ZCdpDiscreteGaussian(ZCdpDiscreteGaussian),
+    }
+}
+
 /// Identifiers for supported VDAFs, corresponding to definitions in
 /// [draft-irtf-cfrg-vdaf-03][1] and implementations in [`prio::vdaf::prio3`].
 ///
@@ -32,15 +54,13 @@ pub enum VdafInstance {
     Prio3SumVec { bits: usize, length: usize },
     /// A `Prio3` histogram with `length` buckets in it.
     Prio3Histogram { length: usize },
-    /// A `Prio3` 16-bit fixed point vector sum with bounded L2 norm.
+    /// A `Prio3` fixed point vector sum with bounded L2 norm.
     #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint16BitBoundedL2VecSum { length: usize },
-    /// A `Prio3` 32-bit fixed point vector sum with bounded L2 norm.
-    #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint32BitBoundedL2VecSum { length: usize },
-    /// A `Prio3` 64-bit fixedpoint vector sum with bounded L2 norm.
-    #[cfg(feature = "fpvec_bounded_l2")]
-    Prio3FixedPoint64BitBoundedL2VecSum { length: usize },
+    Prio3FixedPointBoundedL2VecSum {
+        bitsize: Prio3FixedPointBoundedL2VecSumBitSize,
+        dp_strategy: vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum,
+        length: usize,
+    },
     /// The `poplar1` VDAF. Support for this VDAF is experimental.
     Poplar1 { bits: usize },
 
@@ -113,41 +133,65 @@ impl TryFrom<&taskprov::VdafType> for VdafInstance {
 #[macro_export]
 macro_rules! vdaf_dispatch_impl_base {
     // Provide the dispatched type only, don't construct a VDAF instance.
-    (impl match base $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match base $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Prio3Count => {
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Count;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
             ::janus_core::task::VdafInstance::Prio3CountVec { length } => {
-                type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;
+                type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
             ::janus_core::task::VdafInstance::Prio3Sum { bits } => {
-                type $Vdaf = ::prio::vdaf::prio3::Prio3Sum;
+                type $Vdaf = ::prio::vdaf::prio3::Prio3Sum;;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
             ::janus_core::task::VdafInstance::Prio3SumVec { bits, length } => {
-                type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;
+                type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
             ::janus_core::task::VdafInstance::Prio3Histogram { buckets } => {
-                type $Vdaf = ::prio::vdaf::prio3::Prio3Histogram;
+                type $Vdaf = ::prio::vdaf::prio3::Prio3Histogram;;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
             ::janus_core::task::VdafInstance::Poplar1 { bits } => {
-                type $Vdaf = ::prio::vdaf::poplar1::Poplar1<::prio::vdaf::prg::PrgSha3, 16>;
+                type $Vdaf = ::prio::vdaf::poplar1::Poplar1<::prio::vdaf::prg::PrgSha3, 16>;;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
@@ -156,12 +200,16 @@ macro_rules! vdaf_dispatch_impl_base {
     };
 
     // Construct a VDAF instance, and provide that to the block as well.
-    (impl match base $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match base $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Prio3Count => {
                 let $vdaf = ::prio::vdaf::prio3::Prio3::new_count(2)?;
-                type $Vdaf = ::prio::vdaf::prio3::Prio3Count;
+                type $Vdaf = ::prio::vdaf::prio3::Prio3Count;;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
@@ -175,13 +223,21 @@ macro_rules! vdaf_dispatch_impl_base {
                 )?;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
             ::janus_core::task::VdafInstance::Prio3Sum { bits } => {
                 let $vdaf = ::prio::vdaf::prio3::Prio3::new_sum(2, *bits)?;
-                type $Vdaf = ::prio::vdaf::prio3::Prio3Sum;
+                type $Vdaf = ::prio::vdaf::prio3::Prio3Sum;;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
@@ -194,6 +250,10 @@ macro_rules! vdaf_dispatch_impl_base {
                 )?;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3SumVecMultithreaded;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
@@ -205,6 +265,10 @@ macro_rules! vdaf_dispatch_impl_base {
                 )?;
                 type $Vdaf = ::prio::vdaf::prio3::Prio3Histogram;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
@@ -212,6 +276,10 @@ macro_rules! vdaf_dispatch_impl_base {
                 let $vdaf = ::prio::vdaf::poplar1::Poplar1::new_shake128(*bits);
                 type $Vdaf = ::prio::vdaf::poplar1::Poplar1<::prio::vdaf::xof::XofShake128, 16>;
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
@@ -227,28 +295,9 @@ macro_rules! vdaf_dispatch_impl_fpvec_bounded_l2 {
     // Provide the dispatched type only, don't construct a VDAF instance.
     (impl match fpvec_bounded_l2 $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
         match $vdaf_instance {
-            ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { length } => {
-                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
-                    ::fixed::FixedI16<::fixed::types::extra::U15>,
-                >;
+            ::janus_core::task::VdafInstance::Prio3FixedPointBoundedL2VecSum { bitsize, dp_strategy, length } => {
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
-            }
-
-            ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { length } => {
-                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
-                    ::fixed::FixedI32<::fixed::types::extra::U31>,
-                >;
-                const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
-            }
-
-            ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length } => {
-                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
-                    ::fixed::FixedI64<::fixed::types::extra::U63>,
-                >;
-                const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
+                janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(@dispatch_bitsize bitsize, $Vdaf => $body)
             }
 
             _ => unreachable!(),
@@ -256,47 +305,81 @@ macro_rules! vdaf_dispatch_impl_fpvec_bounded_l2 {
     };
 
     // Construct a VDAF instance, and provide that to the block as well.
-    (impl match fpvec_bounded_l2 $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match fpvec_bounded_l2 $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
-            ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { length } => {
-                let $vdaf =
-                    ::prio::vdaf::prio3::Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(
-                        2, *length,
-                    )?;
-                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
-                    ::fixed::FixedI16<::fixed::types::extra::U15>,
-                >;
+            ::janus_core::task::VdafInstance::Prio3FixedPointBoundedL2VecSum { bitsize, dp_strategy, length } => {
                 const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
-            }
 
-            ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { length } => {
-                let $vdaf =
-                    ::prio::vdaf::prio3::Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(
-                        2, *length,
-                    )?;
-                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
-                    ::fixed::FixedI32<::fixed::types::extra::U31>,
-                >;
-                const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
-            }
-
-            ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { length } => {
-                let $vdaf =
-                    ::prio::vdaf::prio3::Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(
-                        2, *length,
-                    )?;
-                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
-                    ::fixed::FixedI64<::fixed::types::extra::U63>,
-                >;
-                const $VERIFY_KEY_LEN: usize = ::janus_core::task::VERIFY_KEY_LENGTH;
-                $body
-            }
+                janus_core::if_ident_exists!(
+                    $($DpStrategy)?,
+                    true => {
+                        match dp_strategy.clone() {
+                            janus_core::task::vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum::ZCdpDiscreteGaussian(strategy) => {
+                                $(
+                                    type $DpStrategy = ::prio::dp::distributions::ZCdpDiscreteGaussian;
+                                    let $dp_strategy = strategy;
+                                )?
+                                janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(@dispatch_bitsize bitsize, $Vdaf, $vdaf, length => $body)
+                            },
+                            janus_core::task::vdaf_instance_strategies::Prio3FixedPointBoundedL2VecSum::NoDifferentialPrivacy => {
+                                $(
+                                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                                )?
+                                janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(@dispatch_bitsize bitsize, $Vdaf, $vdaf, length => $body)
+                            }
+                        }
+                    },
+                    false => {
+                        janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(@dispatch_bitsize bitsize, $Vdaf, $vdaf, length => $body)
+                    }
+                )
+            },
 
             _ => unreachable!(),
         }
     };
+
+    (@dispatch_bitsize $bitsize:ident, $Vdaf:ident $(, $vdaf:ident, $length:ident)? => $body:tt) => {
+        match $bitsize {
+            janus_core::task::Prio3FixedPointBoundedL2VecSumBitSize::BitSize16 => {
+                $(
+                let $vdaf =
+                    ::prio::vdaf::prio3::Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(
+                        2, *$length,
+                    )?;
+                )?
+                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
+                    ::fixed::FixedI16<::fixed::types::extra::U15>,
+                >;
+                $body
+            },
+            janus_core::task::Prio3FixedPointBoundedL2VecSumBitSize::BitSize32 => {
+                $(
+                let $vdaf =
+                    ::prio::vdaf::prio3::Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(
+                        2, *$length,
+                    )?;
+                )?
+                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
+                    ::fixed::FixedI32<::fixed::types::extra::U31>,
+                >;
+                $body
+            },
+            janus_core::task::Prio3FixedPointBoundedL2VecSumBitSize::BitSize64 => {
+                $(
+                let $vdaf =
+                    ::prio::vdaf::prio3::Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(
+                        2, *$length,
+                    )?;
+                )?
+                type $Vdaf = ::prio::vdaf::prio3::Prio3FixedPointBoundedL2VecSumMultithreaded<
+                    ::fixed::FixedI64<::fixed::types::extra::U63>,
+                >;
+                $body
+            },
+        };
+    }
 }
 
 /// Internal implementation details of [`vdaf_dispatch`](crate::vdaf_dispatch).
@@ -304,23 +387,35 @@ macro_rules! vdaf_dispatch_impl_fpvec_bounded_l2 {
 #[macro_export]
 macro_rules! vdaf_dispatch_impl_test_util {
     // Provide the dispatched type only, don't construct a VDAF instance.
-    (impl match test_util $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match test_util $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Fake => {
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
                 const $VERIFY_KEY_LEN: usize = 0;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
             ::janus_core::task::VdafInstance::FakeFailsPrepInit => {
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
                 const $VERIFY_KEY_LEN: usize = 0;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
             ::janus_core::task::VdafInstance::FakeFailsPrepStep => {
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
                 const $VERIFY_KEY_LEN: usize = 0;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
@@ -329,12 +424,16 @@ macro_rules! vdaf_dispatch_impl_test_util {
     };
 
     // Construct a VDAF instance, and provide that to the block as well.
-    (impl match test_util $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match test_util $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Fake => {
                 let $vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf::new();
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
                 const $VERIFY_KEY_LEN: usize = 0;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
@@ -348,6 +447,10 @@ macro_rules! vdaf_dispatch_impl_test_util {
                 );
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
                 const $VERIFY_KEY_LEN: usize = 0;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
@@ -368,6 +471,10 @@ macro_rules! vdaf_dispatch_impl_test_util {
                         );
                 type $Vdaf = ::janus_core::test_util::dummy_vdaf::Vdaf;
                 const $VERIFY_KEY_LEN: usize = 0;
+                $(
+                    type $DpStrategy = janus_core::dp::NoDifferentialPrivacy;
+                    let $dp_strategy = janus_core::dp::NoDifferentialPrivacy;
+                )?
                 $body
             }
 
@@ -381,7 +488,7 @@ macro_rules! vdaf_dispatch_impl_test_util {
 #[macro_export]
 macro_rules! vdaf_dispatch_impl {
     // Provide the dispatched type only, don't construct a VDAF instance.
-    (impl match all $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match all $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Prio3Count
             | ::janus_core::task::VdafInstance::Prio3CountVec { .. }
@@ -389,19 +496,17 @@ macro_rules! vdaf_dispatch_impl {
             | ::janus_core::task::VdafInstance::Prio3SumVec { .. }
             | ::janus_core::task::VdafInstance::Prio3Histogram { .. }
             | ::janus_core::task::VdafInstance::Poplar1 { .. } => {
-                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN) => $body)
+                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
-            ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { .. }
-            | ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { .. }
-            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. } => {
-                ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN) => $body)
+            ::janus_core::task::VdafInstance::Prio3FixedPointBoundedL2VecSum { .. } => {
+                ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
             ::janus_core::task::VdafInstance::Fake
             | ::janus_core::task::VdafInstance::FakeFailsPrepInit
             | ::janus_core::task::VdafInstance::FakeFailsPrepStep => {
-                ::janus_core::vdaf_dispatch_impl_test_util!(impl match test_util $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN) => $body)
+                ::janus_core::vdaf_dispatch_impl_test_util!(impl match test_util $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
             _ => panic!("VDAF {:?} is not yet supported", $vdaf_instance),
@@ -409,7 +514,7 @@ macro_rules! vdaf_dispatch_impl {
     };
 
     // Construct a VDAF instance, and provide that to the block as well.
-    (impl match all $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match all $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Prio3Count
             | ::janus_core::task::VdafInstance::Prio3CountVec { .. }
@@ -417,19 +522,17 @@ macro_rules! vdaf_dispatch_impl {
             | ::janus_core::task::VdafInstance::Prio3SumVec { .. }
             | ::janus_core::task::VdafInstance::Prio3Histogram { .. }
             | ::janus_core::task::VdafInstance::Poplar1 { .. } => {
-                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN) => $body)
+                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
-            ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { .. }
-            | ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { .. }
-            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. } => {
-                ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN) => $body)
+            ::janus_core::task::VdafInstance::Prio3FixedPointBoundedL2VecSum { .. } => {
+                ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
             ::janus_core::task::VdafInstance::Fake
             | ::janus_core::task::VdafInstance::FakeFailsPrepInit
             | ::janus_core::task::VdafInstance::FakeFailsPrepStep => {
-                ::janus_core::vdaf_dispatch_impl_test_util!(impl match test_util $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN) => $body)
+                ::janus_core::vdaf_dispatch_impl_test_util!(impl match test_util $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
             _ => panic!("VDAF {:?} is not yet supported", $vdaf_instance),
@@ -442,7 +545,7 @@ macro_rules! vdaf_dispatch_impl {
 #[macro_export]
 macro_rules! vdaf_dispatch_impl {
     // Provide the dispatched type only, don't construct a VDAF instance.
-    (impl match all $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match all $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Prio3Count
             | ::janus_core::task::VdafInstance::Prio3CountVec { .. }
@@ -450,13 +553,11 @@ macro_rules! vdaf_dispatch_impl {
             | ::janus_core::task::VdafInstance::Prio3SumVec { .. }
             | ::janus_core::task::VdafInstance::Prio3Histogram { .. }
             | ::janus_core::task::VdafInstance::Poplar1 { .. } => {
-                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN) => $body)
+                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
-            ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { .. }
-            | ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { .. }
-            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. } => {
-                ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN) => $body)
+            ::janus_core::task::VdafInstance::Prio3FixedPointBoundedL2VecSum { .. } => {
+                ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
             _ => panic!("VDAF {:?} is not yet supported", $vdaf_instance),
@@ -464,7 +565,7 @@ macro_rules! vdaf_dispatch_impl {
     };
 
     // Construct a VDAF instance, and provide that to the block as well.
-    (impl match all $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match all $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Prio3Count
             | ::janus_core::task::VdafInstance::Prio3CountVec { .. }
@@ -472,13 +573,11 @@ macro_rules! vdaf_dispatch_impl {
             | ::janus_core::task::VdafInstance::Prio3SumVec { .. }
             | ::janus_core::task::VdafInstance::Prio3Histogram { .. }
             | ::janus_core::task::VdafInstance::Poplar1 { .. } => {
-                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN) => $body)
+                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
-            ::janus_core::task::VdafInstance::Prio3FixedPoint16BitBoundedL2VecSum { .. }
-            | ::janus_core::task::VdafInstance::Prio3FixedPoint32BitBoundedL2VecSum { .. }
-            | ::janus_core::task::VdafInstance::Prio3FixedPoint64BitBoundedL2VecSum { .. } => {
-                ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN) => $body)
+            ::janus_core::task::VdafInstance::Prio3FixedPointBoundedL2VecSum { .. } => {
+                ::janus_core::vdaf_dispatch_impl_fpvec_bounded_l2!(impl match fpvec_bounded_l2 $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
             _ => panic!("VDAF {:?} is not yet supported", $vdaf_instance),
@@ -491,7 +590,7 @@ macro_rules! vdaf_dispatch_impl {
 #[macro_export]
 macro_rules! vdaf_dispatch_impl {
     // Provide the dispatched type only, don't construct a VDAF instance.
-    (impl match all $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match all $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Prio3Count
             | ::janus_core::task::VdafInstance::Prio3CountVec { .. }
@@ -499,13 +598,13 @@ macro_rules! vdaf_dispatch_impl {
             | ::janus_core::task::VdafInstance::Prio3SumVec { .. }
             | ::janus_core::task::VdafInstance::Prio3Histogram { .. }
             | ::janus_core::task::VdafInstance::Poplar1 { .. } => {
-                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN) => $body)
+                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
             ::janus_core::task::VdafInstance::Fake
             | ::janus_core::task::VdafInstance::FakeFailsPrepInit
             | ::janus_core::task::VdafInstance::FakeFailsPrepStep => {
-                ::janus_core::vdaf_dispatch_impl_test_util!(impl match test_util $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN) => $body)
+                ::janus_core::vdaf_dispatch_impl_test_util!(impl match test_util $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
             _ => panic!("VDAF {:?} is not yet supported", $vdaf_instance),
@@ -513,7 +612,7 @@ macro_rules! vdaf_dispatch_impl {
     };
 
     // Construct a VDAF instance, and provide that to the block as well.
-    (impl match all $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match all $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Prio3Count
             | ::janus_core::task::VdafInstance::Prio3CountVec { .. }
@@ -521,13 +620,13 @@ macro_rules! vdaf_dispatch_impl {
             | ::janus_core::task::VdafInstance::Prio3SumVec { .. }
             | ::janus_core::task::VdafInstance::Prio3Histogram { .. }
             | ::janus_core::task::VdafInstance::Poplar1 { .. } => {
-                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN) => $body)
+                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
             ::janus_core::task::VdafInstance::Fake
             | ::janus_core::task::VdafInstance::FakeFailsPrepInit
             | ::janus_core::task::VdafInstance::FakeFailsPrepStep => {
-                ::janus_core::vdaf_dispatch_impl_test_util!(impl match test_util $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN) => $body)
+                ::janus_core::vdaf_dispatch_impl_test_util!(impl match test_util $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
             _ => panic!("VDAF {:?} is not yet supported", $vdaf_instance),
@@ -540,7 +639,7 @@ macro_rules! vdaf_dispatch_impl {
 #[macro_export]
 macro_rules! vdaf_dispatch_impl {
     // Provide the dispatched type only, don't construct a VDAF instance.
-    (impl match all $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match all $vdaf_instance:expr, (_, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Prio3Count
             | ::janus_core::task::VdafInstance::Prio3CountVec { .. }
@@ -548,7 +647,7 @@ macro_rules! vdaf_dispatch_impl {
             | ::janus_core::task::VdafInstance::Prio3SumVec { .. }
             | ::janus_core::task::VdafInstance::Prio3Histogram { .. }
             | ::janus_core::task::VdafInstance::Poplar1 { .. } => {
-                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN) => $body)
+                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, (_, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
             _ => panic!("VDAF {:?} is not yet supported", $vdaf_instance),
@@ -556,7 +655,7 @@ macro_rules! vdaf_dispatch_impl {
     };
 
     // Construct a VDAF instance, and provide that to the block as well.
-    (impl match all $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
+    (impl match all $vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
         match $vdaf_instance {
             ::janus_core::task::VdafInstance::Prio3Count
             | ::janus_core::task::VdafInstance::Prio3CountVec { .. }
@@ -564,7 +663,7 @@ macro_rules! vdaf_dispatch_impl {
             | ::janus_core::task::VdafInstance::Prio3SumVec { .. }
             | ::janus_core::task::VdafInstance::Prio3Histogram { .. }
             | ::janus_core::task::VdafInstance::Poplar1 { .. } => {
-                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN) => $body)
+                ::janus_core::vdaf_dispatch_impl_base!(impl match base $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
             }
 
             _ => panic!("VDAF {:?} is not yet supported", $vdaf_instance),
@@ -604,8 +703,8 @@ macro_rules! vdaf_dispatch {
     };
 
     // Construct a VDAF instance, and provide that to the block as well.
-    ($vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident) => $body:tt) => {
-        ::janus_core::vdaf_dispatch_impl!(impl match all $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN) => $body)
+    ($vdaf_instance:expr, ($vdaf:ident, $Vdaf:ident, $VERIFY_KEY_LEN:ident $(, $DpStrategy:ident, $dp_strategy:ident )?) => $body:tt) => {
+        ::janus_core::vdaf_dispatch_impl!(impl match all $vdaf_instance, ($vdaf, $Vdaf, $VERIFY_KEY_LEN $(, $DpStrategy, $dp_strategy)?) => $body)
     };
 }
 
@@ -776,7 +875,6 @@ pub fn url_ensure_trailing_slash(mut url: Url) -> Url {
 mod tests {
     use super::{AuthenticationToken, VdafInstance};
     use serde_test::{assert_tokens, Token};
-
     #[test]
     fn vdaf_serialization() {
         // The `Vdaf` type must have a stable serialization, as it gets stored in a JSON database
