@@ -622,7 +622,9 @@ impl<V: vdaf::Collector> Collector<V> {
         aggregation_parameter: &V::AggregationParam,
     ) -> Result<Collection<V::AggregateResult, Q>, Error> {
         let job = self.start_collection(query, aggregation_parameter).await?;
-        self.poll_until_complete(&job).await
+        let res = self.poll_until_complete(&job).await;
+        println!("janus/collector: res: {res:?}");
+        res
     }
 }
 

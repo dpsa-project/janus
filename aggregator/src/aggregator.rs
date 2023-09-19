@@ -227,6 +227,8 @@ impl<C: Clock> Aggregator<C> {
         meter: &Meter,
         cfg: Config,
     ) -> Result<Self, Error> {
+        info!("creating new aggregator!");
+
         let report_writer = Arc::new(ReportWriteBatcher::new(
             Arc::clone(&datastore),
             cfg.max_upload_batch_size,
