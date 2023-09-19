@@ -2939,7 +2939,7 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 [[package]]
 name = "prio"
 version = "0.15.1"
-source = "git+https://github.com/dpsa4fl/libprio-rs.git?branch=dp-update-for-janus-rebased#caf3a0bb70ac2660d902123f4320cde444fc51e8"
+source = "git+https://github.com/dpsa4fl/libprio-rs.git?branch=bugfix-only-32bit-correct#71a0285475bbaa167b8562b7cc3fa2dccdf537c0"
 dependencies = [
  "aes",
  "bitvec",

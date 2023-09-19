@@ -22,7 +22,7 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
 COPY --from=planner /src/recipe.json /src/recipe.json
-RUN cargo chef cook --release -p janus_aggregator --features=prometheus,otlp
+RUN cargo chef cook --release -p janus_aggregator --features=prometheus,otlp,fpvec_bounded_l2
 COPY Cargo.toml Cargo.lock /src/
 COPY aggregator /src/aggregator
 COPY aggregator_api /src/aggregator_api
@@ -39,7 +39,7 @@ COPY tools /src/tools
 ARG BINARY=aggregator
 ARG GIT_REVISION=unknown
 ENV GIT_REVISION ${GIT_REVISION}
-RUN cargo build --release -p janus_aggregator --bin $BINARY --features=prometheus,otlp
+RUN cargo build --release -p janus_aggregator --bin $BINARY --features=prometheus,otlp,fpvec_bounded_l2
 
 FROM alpine:3.18.3 AS final
 ARG BINARY=aggregator
