@@ -127,6 +127,10 @@ pub enum Error {
     /// Corresponds to taskprov invalidType (§2)
     #[error("aggregator has opted out of the indicated task: {1}")]
     InvalidTask(TaskId, OptOutReason),
+    #[cfg(feature = "fpvec_bounded_l2")]
+    /// An error occurred when trying to ensure differential privacy.
+    #[error("differential privacy error: {0}")]
+    DifferentialPrivacy(VdafError),
 }
 
 /// Errors that cause the aggregator to opt-out of a taskprov task.
@@ -181,6 +185,8 @@ impl Error {
             Error::ForbiddenMutation { .. } => "forbidden_mutation",
             Error::BadRequest(_) => "bad_request",
             Error::InvalidTask(_, _) => "invalid_task",
+            #[cfg(feature = "fpvec_bounded_l2")]
+            Error::DifferentialPrivacy(_) => "differential_privacy",
         }
     }
 }

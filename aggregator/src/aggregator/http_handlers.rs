@@ -106,6 +106,8 @@ impl Handler for Error {
             Error::InvalidTask(task_id, _) => {
                 conn.with_problem_details(DapProblemType::InvalidTask, Some(task_id))
             }
+            #[cfg(feature = "fpvec_bounded_l2")]
+            Error::DifferentialPrivacy(_) => conn.with_status(Status::InternalServerError),
         }
     }
 }
