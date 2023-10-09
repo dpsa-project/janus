@@ -23,7 +23,6 @@ use prio::{
 };
 use serde::{Deserialize, Serialize};
 
-////////////////////////////////////////////////////////////////
 // strategy enum for dispatch
 
 #[derive(Debug, Derivative, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -34,7 +33,6 @@ pub enum DpStrategyInstance {
 
 impl DpStrategyInstance {}
 
-////////////////////////////////////////////////////////////////
 // identity strategy
 
 pub struct NoBudget;
@@ -57,7 +55,6 @@ impl DifferentialPrivacyStrategy for NoDifferentialPrivacy {
     }
 }
 
-////////////////////////////////////////////////////////////////
 // converting strategy enum into strategy types
 
 impl TryFrom<DpStrategyInstance> for NoDifferentialPrivacy {
@@ -84,7 +81,6 @@ impl TryFrom<DpStrategyInstance> for ZCdpDiscreteGaussian {
     }
 }
 
-////////////////////////////////////////////////////////////////
 // identity strategy implementations for vdafs from janus
 #[cfg(feature = "test-util")]
 impl AggregatorWithNoise<0, 16, NoDifferentialPrivacy> for Vdaf {
@@ -99,7 +95,6 @@ impl AggregatorWithNoise<0, 16, NoDifferentialPrivacy> for Vdaf {
     }
 }
 
-////////////////////////////////////////////////////////////////
 // identity strategy implementations for vdafs from libprio
 impl TypeWithNoise<NoDifferentialPrivacy> for prio::flp::types::Sum<Field128> {
     fn add_noise_to_result(
@@ -178,7 +173,6 @@ impl AggregatorWithNoise<16, 16, NoDifferentialPrivacy>
     }
 }
 
-////////////////////////////////////////////////////////////////
 // macro to use in dispatch
 
 /// If the first argument is non-empty, the `true` body is emitted,
