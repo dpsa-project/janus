@@ -8,8 +8,6 @@ use fixed::{
     FixedI16, FixedI32, FixedI64,
 };
 #[cfg(feature = "fpvec_bounded_l2")]
-use fixed::{FixedI16, FixedI32, FixedI64};
-#[cfg(feature = "fpvec_bounded_l2")]
 use janus_core::vdaf::Prio3FixedPointBoundedL2VecSumBitSize;
 use janus_core::vdaf::VdafInstance;
 use janus_interop_binaries::{
@@ -160,7 +158,7 @@ async fn handle_upload(
                     Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length).context(
                         "failed to construct Prio3FixedPoint16BitBoundedL2VecSumZCdp VDAF",
                     )?;
-                handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
+                handle_upload_generic(http_client, vdaf, request, measurement).await?;
             }
             Prio3FixedPointBoundedL2VecSumBitSize::BitSize32 => {
                 let measurement =
@@ -169,7 +167,7 @@ async fn handle_upload(
                     Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length).context(
                         "failed to construct Prio3FixedPoint32BitBoundedL2VecSumZCdp VDAF",
                     )?;
-                handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
+                handle_upload_generic(http_client, vdaf, request, measurement).await?;
             }
             Prio3FixedPointBoundedL2VecSumBitSize::BitSize64 => {
                 let measurement =
@@ -178,7 +176,7 @@ async fn handle_upload(
                     Prio3::new_fixedpoint_boundedl2_vec_sum_multithreaded(2, length).context(
                         "failed to construct Prio3FixedPoint64BitBoundedL2VecSumZCdp VDAF",
                     )?;
-                handle_upload_generic(http_client, vdaf_client, request, measurement).await?;
+                handle_upload_generic(http_client, vdaf, request, measurement).await?;
             }
         },
         _ => panic!("Unsupported VDAF: {vdaf_instance:?}"),
